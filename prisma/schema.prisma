@@ -1,0 +1,444 @@
+// EnglishFlow AI database schema.
+// Curriculum content (added in Milestone 3) is kept separate from learner records.
+// Every learner-owned table has a userId foreign key with cascade delete.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (managed by Better Auth — field names must match its schema)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  profile          Profile?
+  preferences      LearningPreferences?
+  attempts         ExerciseAttempt[]
+  conceptProgress  ConceptProgress[]
+  lessonProgress   LessonProgress[]
+  placementResults PlacementResult[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// Rate-limit counters stored in the database so limits hold across serverless instances.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}
+
+// ---------------------------------------------------------------------------
+// Learner profile and preferences
+// ---------------------------------------------------------------------------
+
+enum CefrLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum LevelSource {
+  self_reported
+  placement
+  assessment
+}
+
+enum ExplanationStyle {
+  concise
+  detailed
+}
+
+enum TutorHintMode {
+  hint_first
+  guided
+  direct
+}
+
+enum TextScale {
+  normal
+  large
+  x_large
+}
+
+model Profile {
+  id                    String       @id @default(cuid())
+  userId                String       @unique
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName           String
+  nativeLanguage        String?
+  /// IANA time zone, e.g. "Africa/Lagos". Used to decide when reviews are "due today".
+  timezone              String       @default("UTC")
+  goals                 String[]
+  /// Level the learner chose themselves; never treated as an assessed level.
+  selfReportedLevel     CefrLevel?
+  /// Current working estimate and where it came from.
+  estimatedLevel        CefrLevel?
+  levelSource           LevelSource?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  @@map("profile")
+}
+
+model LearningPreferences {
+  id                  String           @id @default(cuid())
+  userId              String           @unique
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyMinutes        Int              @default(20)
+  explanationStyle    ExplanationStyle @default(concise)
+  tutorHintMode       TutorHintMode    @default(hint_first)
+  translationSupport  Boolean          @default(true)
+  textScale           TextScale        @default(normal)
+  reducedMotion       Boolean          @default(false)
+  gamificationEnabled Boolean          @default(true)
+  /// Whether the AI tutor may see learning history (Milestone 6). Off until the learner opts in.
+  aiContextSharing    Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("learning_preferences")
+}
+
+// ---------------------------------------------------------------------------
+// Curriculum content (shared, read-only to learners; loaded from content/ by the seed)
+// ---------------------------------------------------------------------------
+
+enum Skill {
+  grammar
+  vocabulary
+  listening
+  reading
+  writing
+  pronunciation
+  sentence_construction
+  functional_communication
+}
+
+enum LessonStatus {
+  planned
+  published
+}
+
+enum ExerciseType {
+  multiple_choice
+  gap_fill
+  sentence_completion
+  matching
+  word_order
+  error_correction
+  transformation
+  short_answer
+}
+
+enum ExercisePhase {
+  guided
+  independent
+  recall
+  placement
+}
+
+model Level {
+  code        CefrLevel      @id
+  order       Int            @unique
+  title       String
+  description String
+  modules     CourseModule[]
+  concepts    Concept[]
+
+  @@map("level")
+}
+
+model CourseModule {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  levelCode   CefrLevel
+  level       Level     @relation(fields: [levelCode], references: [code])
+  order       Int
+  title       String
+  description String
+  archivedAt  DateTime?
+  units       Unit[]
+
+  @@index([levelCode, order])
+  @@map("course_module")
+}
+
+model Unit {
+  id         String       @id @default(cuid())
+  slug       String       @unique
+  moduleId   String
+  module     CourseModule @relation(fields: [moduleId], references: [id])
+  order      Int
+  title      String
+  archivedAt DateTime?
+  lessons    Lesson[]
+
+  @@index([moduleId, order])
+  @@map("unit")
+}
+
+model Lesson {
+  id               String           @id @default(cuid())
+  slug             String           @unique
+  unitId           String
+  unit             Unit             @relation(fields: [unitId], references: [id])
+  order            Int
+  title            String
+  objective        String
+  status           LessonStatus
+  /// Structured explanation blocks, validated by content/schemas.ts.
+  body             Json?
+  /// Open-ended application task with model answers and a self-check list.
+  application      Json?
+  masteryCriteria  String[]
+  estimatedMinutes Int?
+  /// Content written by the AI assistant stays marked until a human teacher reviews it.
+  reviewStatus     String           @default("pending_human_review")
+  archivedAt       DateTime?
+  concepts         LessonConcept[]
+  exercises        Exercise[]
+  progress         LessonProgress[]
+
+  @@index([unitId, order])
+  @@map("lesson")
+}
+
+model Concept {
+  id            String                @id @default(cuid())
+  slug          String                @unique
+  name          String
+  description   String
+  skill         Skill
+  levelCode     CefrLevel
+  level         Level                 @relation(fields: [levelCode], references: [code])
+  prerequisites ConceptPrerequisite[] @relation("ConceptRequires")
+  requiredBy    ConceptPrerequisite[] @relation("ConceptRequiredBy")
+  lessons       LessonConcept[]
+  exercises     ExerciseConcept[]
+  progress      ConceptProgress[]
+
+  @@map("concept")
+}
+
+model ConceptPrerequisite {
+  conceptId      String
+  concept        Concept @relation("ConceptRequires", fields: [conceptId], references: [id], onDelete: Cascade)
+  prerequisiteId String
+  prerequisite   Concept @relation("ConceptRequiredBy", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@id([conceptId, prerequisiteId])
+  @@map("concept_prerequisite")
+}
+
+model LessonConcept {
+  lessonId  String
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  conceptId String
+  concept   Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, conceptId])
+  @@map("lesson_concept")
+}
+
+model Exercise {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  lessonId         String?
+  lesson           Lesson?           @relation(fields: [lessonId], references: [id])
+  type             ExerciseType
+  phase            ExercisePhase
+  order            Int
+  objective        String
+  instructions     String
+  explanation      String
+  hint             String?
+  /// Type-specific data including accepted answers. Never sent to the browser before grading.
+  payload          Json
+  difficulty       Int
+  skill            Skill
+  placementSection Skill?
+  placementLevel   CefrLevel?
+  source           String            @default("seed")
+  reviewStatus     String            @default("pending_human_review")
+  archivedAt       DateTime?
+  concepts         ExerciseConcept[]
+  attempts         ExerciseAttempt[]
+
+  @@index([lessonId, order])
+  @@index([phase, placementSection])
+  @@map("exercise")
+}
+
+model ExerciseConcept {
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  conceptId  String
+  concept    Concept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, conceptId])
+  @@map("exercise_concept")
+}
+
+// ---------------------------------------------------------------------------
+// Learner learning records (private; every row belongs to one user)
+// ---------------------------------------------------------------------------
+
+enum AttemptContext {
+  lesson
+  placement
+}
+
+enum MasteryState {
+  new
+  learning
+  practicing
+  mastered
+}
+
+model ExerciseAttempt {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId        String
+  exercise          Exercise         @relation(fields: [exerciseId], references: [id])
+  context           AttemptContext
+  response          Json
+  isCorrect         Boolean
+  score             Float
+  hintsUsed         Int              @default(0)
+  revealedAnswer    Boolean          @default(false)
+  /// True when answered without a hint and before seeing the answer.
+  independent       Boolean
+  placementResultId String?
+  placementResult   PlacementResult? @relation(fields: [placementResultId], references: [id], onDelete: Cascade)
+  createdAt         DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, exerciseId])
+  @@map("exercise_attempt")
+}
+
+model ConceptProgress {
+  id                 String       @id @default(cuid())
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conceptId          String
+  concept            Concept      @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  exposures          Int          @default(0)
+  attempts           Int          @default(0)
+  correct            Int          @default(0)
+  independentCorrect Int          @default(0)
+  /// Most recent outcomes, newest last, capped at 10.
+  recentOutcomes     Boolean[]
+  lastExposedAt      DateTime?
+  lastPracticedAt    DateTime?
+  masteryState       MasteryState @default(new)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([userId, conceptId])
+  @@map("concept_progress")
+}
+
+model LessonProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId      String
+  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  firstViewedAt DateTime  @default(now())
+  lastViewedAt  DateTime  @default(now())
+  viewCount     Int       @default(1)
+  completedAt   DateTime?
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model PlacementResult {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  grammarLevel    CefrLevel?
+  vocabularyLevel CefrLevel?
+  readingLevel    CefrLevel?
+  overallLevel    CefrLevel?
+  /// Per-section, per-level correct/total counts used for the estimate.
+  scores          Json
+  chosenLevel     CefrLevel?
+  completedAt     DateTime          @default(now())
+  attempts        ExerciseAttempt[]
+
+  @@index([userId, completedAt])
+  @@map("placement_result")
+}

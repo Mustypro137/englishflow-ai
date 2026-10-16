@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/*
+ * EnglishFlow design tokens.
+ * Colors are chosen to meet WCAG AA contrast on the paper/surface backgrounds:
+ * ink and muted for text, primary/accent/status colors for text and controls.
+ */
+@theme {
+  --color-paper: #fbfaf7;
+  --color-surface: #ffffff;
+  --color-sunken: #f3f1ec;
+  --color-ink: #1a1f2b;
+  --color-muted: #525a6a;
+  --color-border: #e2dfd7;
+  --color-border-strong: #c9c5ba;
+
+  --color-primary: #0f6e73;
+  --color-primary-hover: #0b5a5e;
+  --color-primary-soft: #e4f1f1;
+  --color-on-primary: #ffffff;
+
+  --color-accent: #a24a07;
+  --color-accent-soft: #fbf0df;
+
+  --color-success: #1f7a3e;
+  --color-success-soft: #e6f4ea;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-warning: #855400;
+  --color-warning-soft: #fdf4dc;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+:root {
+  /* Learner text-size preference (wired to a setting in Milestone 2). */
+  --text-scale: 1;
+  color-scheme: light;
+}
+
+html[data-text-scale="large"] {
+  --text-scale: 1.125;
+}
+html[data-text-scale="x-large"] {
+  --text-scale: 1.25;
+}
+
+html {
+  font-size: calc(100% * var(--text-scale));
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+/* One consistent, clearly visible focus indicator for every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background-color: var(--color-primary-soft);
+}
+
+/* Reduced motion: honor the OS setting and the in-app preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduced-motion="true"] *,
+html[data-reduced-motion="true"] *::before,
+html[data-reduced-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Long-form reading and lesson text. */
+.prose-reading {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  max-width: 68ch;
+}
