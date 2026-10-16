@@ -11,7 +11,7 @@ if (missing.length > 0) {
     `\nMissing environment variable(s): ${missing.join(", ")}\n` +
       "Locally: add them to .env.local (see .env.example).\n" +
       "On Vercel: Project → Settings → Environment Variables. Check the exact names, make sure\n" +
-      "\"Production\" is ticked, save, then redeploy.\n",
+      '"Production" is ticked, save, then redeploy.\n',
   );
   process.exit(1);
 }
