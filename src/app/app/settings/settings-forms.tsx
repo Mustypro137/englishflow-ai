@@ -94,6 +94,12 @@ export function PreferencesForm({ defaults }: { defaults: PreferencesView }) {
           hint="Turns off animations and transitions in the learning app."
           defaultChecked={defaults.reducedMotion}
         />
+        <Toggle
+          name="gamificationEnabled"
+          label="Show streaks, points and badges"
+          hint="Turn off if they distract you. Your progress and reviews are not affected."
+          defaultChecked={defaults.gamificationEnabled}
+        />
       </fieldset>
       <SaveRow pending={pending} state={state} label="Save preferences" />
     </form>

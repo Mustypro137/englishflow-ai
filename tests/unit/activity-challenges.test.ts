@@ -97,6 +97,16 @@ describe("challenges", () => {
     expect(a.map((x) => x.challenge.period)).toEqual(["daily", "daily", "weekly"]);
     expect(activeChallenges(p)).toEqual(a);
     expect(new Set(a.map((x) => x.challenge.slug)).size).toBe(3);
+    expect(a[0].challenge.slug).toBe("daily-five-sentences");
+  });
+
+  it("rotates the second daily challenge across days", () => {
+    const seen = new Set<string>();
+    for (let d = 1; d <= 28; d++) {
+      const key = `2026-11-${String(d).padStart(2, "0")}`;
+      seen.add(activeChallenges({ daily: key, weekly: "2026-11-02" })[1].challenge.slug);
+    }
+    expect(seen.size).toBeGreaterThan(2);
   });
 
   it("measures progress and completion from real activity", () => {

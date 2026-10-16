@@ -53,10 +53,10 @@ export async function startSession(userId: string, minutes: number, now = new Da
   return toView(row);
 }
 
-/** The learner's unfinished session from the last 12 hours, if any. */
-export async function getActiveSession(userId: string, now = new Date()): Promise<SessionView | null> {
+/** The learner's latest session from the last 12 hours (finished or not), if any. */
+export async function getCurrentSession(userId: string, now = new Date()): Promise<SessionView | null> {
   const row = await prisma.studySession.findFirst({
-    where: { userId, completedAt: null, startedAt: { gte: new Date(now.getTime() - ACTIVE_FOR_MS) } },
+    where: { userId, startedAt: { gte: new Date(now.getTime() - ACTIVE_FOR_MS) } },
     orderBy: { startedAt: "desc" },
   });
   return row ? toView(row) : null;

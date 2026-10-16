@@ -76,6 +76,7 @@ describe("preferencesUpdateSchema", () => {
       textScale: "large",
       translationSupport: false,
       reducedMotion: true,
+      gamificationEnabled: false,
     });
   });
 });

@@ -33,7 +33,7 @@ export type ModuleGroup = "study" | "skills" | "support" | "account";
 export interface LearnerModule {
   id: string;
   label: string;
-  href: `/app/${string}`;
+  href: "/app" | `/app/${string}`;
   description: string;
   icon: ModuleIcon;
   group: ModuleGroup;
@@ -57,13 +57,13 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
   {
     id: "dashboard",
     label: "Today",
-    href: "/app/dashboard",
+    href: "/app",
     description:
       "Your study plan for today, reviews due and the next recommended lesson — with the reason for each recommendation.",
     icon: "dashboard",
     group: "study",
     milestone: 5,
-    status: "planned",
+    status: "available",
     primaryOnMobile: true,
   },
   {
@@ -94,12 +94,11 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     id: "grammar",
     label: "Grammar",
     href: "/app/grammar",
-    description:
-      "Step-by-step grammar lessons with worked examples, contrasting examples, common mistakes and practice.",
+    description: "Every grammar topic by level, with how well you know each one and the lessons that teach it.",
     icon: "grammar",
     group: "study",
-    milestone: 3,
-    status: "planned",
+    milestone: 5,
+    status: "available",
   },
   {
     id: "vocabulary",
@@ -120,7 +119,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "challenges",
     group: "study",
     milestone: 5,
-    status: "planned",
+    status: "available",
   },
   {
     id: "listening",
@@ -237,7 +236,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "calendar",
     group: "support",
     milestone: 5,
-    status: "planned",
+    status: "available",
   },
   {
     id: "settings",

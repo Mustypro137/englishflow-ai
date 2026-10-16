@@ -75,11 +75,15 @@ describe("getNavModules", () => {
 
   it("shows only modules that work", () => {
     expect(getNavModules().map((m) => m.id)).toEqual([
+      "dashboard",
       "learn",
       "review",
+      "grammar",
       "vocabulary",
+      "challenges",
       "notebook",
       "mistakes",
+      "calendar",
       "settings",
     ]);
   });

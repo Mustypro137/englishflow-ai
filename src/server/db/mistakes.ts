@@ -67,11 +67,14 @@ export interface MistakeView {
   lesson: { slug: string; title: string } | null;
 }
 
-export async function listMistakes(userId: string): Promise<MistakeView[]> {
+export async function listMistakes(
+  userId: string,
+  opts: { limit?: number; openOnly?: boolean } = {},
+): Promise<MistakeView[]> {
   const rows = await prisma.mistakeRecord.findMany({
-    where: { userId },
+    where: { userId, ...(opts.openOnly ? { resolvedAt: null } : {}) },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take: opts.limit ?? 200,
     include: {
       concept: { select: { name: true } },
       exercise: { select: { instructions: true, lesson: { select: { slug: true, title: true } } } },

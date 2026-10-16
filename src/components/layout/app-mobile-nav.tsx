@@ -1,6 +1,6 @@
 "use client";
 
-import { Ellipsis, Home, X } from "lucide-react";
+import { Ellipsis, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,14 @@ export function AppMobileNav({ primary, more }: { primary: LearnerModule[]; more
   return (
     <nav aria-label="Learning" className="border-border bg-surface fixed inset-x-0 bottom-0 z-30 border-t md:hidden">
       <ul className="flex px-2">
-        <li className="flex flex-1">
-          <NavLink href="/app" exact className={itemClass} activeClassName="font-medium text-primary">
-            <Home aria-hidden className="size-5" />
-            Home
-          </NavLink>
-        </li>
         {primary.map((m) => (
           <li key={m.id} className="flex flex-1">
-            <NavLink href={m.href} className={itemClass} activeClassName="font-medium text-primary">
+            <NavLink
+              href={m.href}
+              exact={m.href === "/app"}
+              className={itemClass}
+              activeClassName="font-medium text-primary"
+            >
               <ModuleIcon name={m.icon} className="size-5" />
               {m.label}
             </NavLink>
@@ -56,6 +55,7 @@ export function AppMobileNav({ primary, more }: { primary: LearnerModule[]; more
                       <li key={m.id}>
                         <NavLink
                           href={m.href}
+                          exact={m.href === "/app"}
                           onClick={() => setOpen(false)}
                           className="text-ink hover:bg-sunken flex items-center gap-3 rounded-md px-3 py-3 text-sm"
                           activeClassName="bg-primary-soft font-medium text-primary-hover"

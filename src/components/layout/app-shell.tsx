@@ -1,4 +1,4 @@
-import { ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getNavModules, groupModules, splitMobileNav } from "@/lib/modules";
@@ -27,21 +27,18 @@ export function AppShell({ children, account }: { children: ReactNode; account: 
           <Logo href="/app" />
         </div>
         <nav aria-label="Learning" className="flex-1 overflow-y-auto px-3 py-2">
-          <ul className="mb-4">
-            <li>
-              <NavLink href="/app" exact className={sideLink} activeClassName={sideLinkActive}>
-                <Home aria-hidden className="size-4" />
-                Home
-              </NavLink>
-            </li>
-          </ul>
           {groups.map((g) => (
             <div key={g.group} className="mb-4">
               <p className="text-muted px-2 pb-1 text-xs font-medium tracking-wide uppercase">{g.label}</p>
               <ul className="space-y-0.5">
                 {g.modules.map((m) => (
                   <li key={m.id}>
-                    <NavLink href={m.href} className={sideLink} activeClassName={sideLinkActive}>
+                    <NavLink
+                      href={m.href}
+                      exact={m.href === "/app"}
+                      className={sideLink}
+                      activeClassName={sideLinkActive}
+                    >
                       <ModuleIcon name={m.icon} className="size-4" />
                       {m.label}
                     </NavLink>

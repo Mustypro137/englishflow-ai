@@ -29,13 +29,19 @@ function pick<T>(pool: readonly T[], count: number, seed: string): T[] {
   return ranked.slice(0, Math.min(count, pool.length)).map((x) => x.item);
 }
 
+/** Writing your own sentences is offered every day; the second daily challenge rotates. */
+export const EVERY_DAY_CHALLENGE = "daily-five-sentences";
+
 /** Two daily and one weekly challenge per period — the same for everyone, stable within the period. */
 export function activeChallenges(periods: ChallengePeriods): { challenge: ChallengeDefinition; periodKey: string }[] {
-  const daily = pick(
-    CHALLENGES.filter((c) => c.period === "daily"),
-    2,
-    `daily:${periods.daily}`,
-  );
+  const daily = [
+    ...CHALLENGES.filter((c) => c.slug === EVERY_DAY_CHALLENGE),
+    ...pick(
+      CHALLENGES.filter((c) => c.period === "daily" && c.slug !== EVERY_DAY_CHALLENGE),
+      1,
+      `daily:${periods.daily}`,
+    ),
+  ];
   const weekly = pick(
     CHALLENGES.filter((c) => c.period === "weekly"),
     1,
