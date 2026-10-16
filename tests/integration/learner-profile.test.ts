@@ -93,6 +93,7 @@ describe("learner profile repository", () => {
       translationSupport: false,
       textScale: "x_large",
       reducedMotion: true,
+      gamificationEnabled: false,
     });
     expect(await getProfile(user.id)).toMatchObject({ displayName: "Benjamin", nativeLanguage: "Yoruba", goals: [] });
     expect(await getPreferences(user.id)).toEqual({
@@ -101,6 +102,7 @@ describe("learner profile repository", () => {
       translationSupport: false,
       textScale: "x_large",
       reducedMotion: true,
+      gamificationEnabled: false,
     });
   });
 });
@@ -119,6 +121,7 @@ describe("learner data isolation", () => {
       translationSupport: false,
       textScale: "large",
       reducedMotion: true,
+      gamificationEnabled: true,
     });
 
     expect((await getProfile(a.id))?.displayName).toBe("A changed");

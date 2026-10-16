@@ -21,7 +21,7 @@ export async function trackAnswer(
     conceptIds: string[];
     response: unknown;
     result: GradeResult;
-    context: "lesson" | "review";
+    context: "lesson" | "review" | "practice";
   },
   now: Date,
 ): Promise<void> {
@@ -55,7 +55,7 @@ export interface MistakeView {
   id: string;
   createdAt: Date;
   resolvedAt: Date | null;
-  context: "lesson" | "placement" | "review";
+  context: "lesson" | "placement" | "review" | "practice";
   originalAnswer: string;
   correctAnswer: string;
   explanation: string;

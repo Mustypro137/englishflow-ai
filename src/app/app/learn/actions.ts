@@ -15,6 +15,7 @@ const attemptInput = z.object({
   response: z.unknown(),
   hintsUsed: z.number().int().min(0).max(10),
   revealedAnswer: z.boolean(),
+  context: z.enum(["lesson", "practice"]).default("lesson"),
 });
 
 export type AttemptActionResult =
@@ -26,10 +27,8 @@ export async function submitAttemptAction(input: z.input<typeof attemptInput>): 
   const parsed = attemptInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: "That answer couldn't be read. Please try again." };
   try {
-    const { result, progress } = await recordAttempt(user.id, {
-      ...parsed.data,
-      response: parsed.data.response,
-    });
+    const { context, ...attempt } = parsed.data;
+    const { result, progress } = await recordAttempt(user.id, { ...attempt, response: attempt.response }, context);
     return { ok: true, result, progress };
   } catch (err) {
     if (err instanceof InvalidResponseError) {

@@ -53,10 +53,15 @@ export interface AttemptOutcome {
   progress: LessonProgressSummary;
 }
 
-/** Grade a lesson exercise on the server, store the attempt and update concept progress. */
+/**
+ * Grade a lesson exercise on the server, store the attempt and update concept progress.
+ * Context "practice" is mixed practice of lessons already studied: it counts as practice
+ * evidence but never towards completing a lesson.
+ */
 export async function recordAttempt(
   userId: string,
   input: { exerciseId: string; response: unknown; hintsUsed: number; revealedAnswer: boolean },
+  context: "lesson" | "practice" = "lesson",
 ): Promise<AttemptOutcome> {
   const [record] = await getExercisesForGrading([input.exerciseId]);
   if (!record || !record.lessonId || record.phase === "placement") {
@@ -74,7 +79,7 @@ export async function recordAttempt(
       data: {
         userId,
         exerciseId: record.id,
-        context: "lesson",
+        context,
         response: input.response as Prisma.InputJsonValue,
         isCorrect: result.correct,
         score: result.score,
@@ -107,14 +112,14 @@ export async function recordAttempt(
         conceptIds: record.conceptIds,
         response: input.response,
         result,
-        context: "lesson",
+        context,
       },
       now,
     );
   });
 
   const progress = await lessonSummary(prisma, userId, lessonId);
-  if (progress.completed) {
+  if (progress.completed && context === "lesson") {
     await prisma.lessonProgress.upsert({
       where: { userId_lessonId: { userId, lessonId } },
       create: { userId, lessonId, completedAt: now },

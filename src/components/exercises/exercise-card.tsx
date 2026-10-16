@@ -22,12 +22,18 @@ export function ExerciseCard({
   allowHints,
   history,
   onProgress,
+  onResult,
+  context = "lesson",
 }: {
   exercise: ClientExercise;
   label: string;
   allowHints: boolean;
   history?: ExerciseHistory;
   onProgress?: (p: LessonProgressSummary) => void;
+  /** Called with each graded result (first and later tries). */
+  onResult?: (r: GradeResult, independent: boolean) => void;
+  /** "practice" for mixed practice of lessons already studied. */
+  context?: "lesson" | "practice";
 }) {
   const idPrefix = useId();
   const hydrated = useHydrated();
@@ -54,6 +60,7 @@ export function ExerciseCard({
         response: toResponse(exercise, answer),
         hintsUsed: hintShown ? 1 : 0,
         revealedAnswer: everRevealed,
+        context,
       });
       if (!res.ok) {
         setError(res.error);
@@ -61,6 +68,7 @@ export function ExerciseCard({
       }
       setResult(res.result);
       onProgress?.(res.progress);
+      onResult?.(res.result, !hintShown && !everRevealed);
     });
   }
 

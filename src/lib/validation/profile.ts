@@ -87,6 +87,7 @@ export const preferencesUpdateSchema = z.object({
   translationSupport: checkbox,
   textScale: z.enum(["normal", "large", "x_large"]),
   reducedMotion: checkbox,
+  gamificationEnabled: checkbox,
 });
 export type PreferencesUpdateInput = z.output<typeof preferencesUpdateSchema>;
 

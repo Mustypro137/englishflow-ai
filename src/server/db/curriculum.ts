@@ -223,3 +223,112 @@ export async function getPlacementQuestions(): Promise<PlacementQuestion[]> {
     .sort((a, b) => sectionOrder[a.placementSection] - sectionOrder[b.placementSection] || a.order - b.order)
     .map((r) => ({ section: r.placementSection, exercise: toClient(r) }));
 }
+
+export interface GraphLesson {
+  id: string;
+  slug: string;
+  title: string;
+  objective: string;
+  levelCode: Cefr;
+  unitSlug: string;
+  unitTitle: string;
+  status: "planned" | "published";
+  estimatedMinutes: number | null;
+  exerciseCount: number;
+  conceptSlugs: string[];
+}
+
+export interface GraphConcept {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  skill: Exercise["skill"];
+  levelCode: Cefr;
+  prerequisites: string[];
+  lessonSlugs: string[];
+}
+
+/** Lessons (in curriculum order) and concepts with their links — the shape the recommendation engine needs. */
+export async function getCurriculumGraph(): Promise<{ lessons: GraphLesson[]; concepts: GraphConcept[] }> {
+  "use cache";
+  const [levels, concepts] = await Promise.all([
+    prisma.level.findMany({
+      orderBy: { order: "asc" },
+      include: {
+        modules: {
+          where: { archivedAt: null },
+          orderBy: { order: "asc" },
+          include: {
+            units: {
+              where: { archivedAt: null },
+              orderBy: { order: "asc" },
+              include: {
+                lessons: {
+                  where: { archivedAt: null },
+                  orderBy: { order: "asc" },
+                  include: {
+                    concepts: { include: { concept: { select: { slug: true } } } },
+                    _count: { select: { exercises: { where: { archivedAt: null } } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.concept.findMany({
+      include: {
+        prerequisites: { include: { prerequisite: { select: { slug: true } } } },
+        lessons: { include: { lesson: { select: { slug: true, archivedAt: true } } } },
+      },
+    }),
+  ]);
+  const lessons = levels.flatMap((level) =>
+    level.modules.flatMap((m) =>
+      m.units.flatMap((u) =>
+        u.lessons.map((l) => ({
+          id: l.id,
+          slug: l.slug,
+          title: l.title,
+          objective: l.objective,
+          levelCode: level.code,
+          unitSlug: u.slug,
+          unitTitle: u.title,
+          status: l.status,
+          estimatedMinutes: l.estimatedMinutes,
+          exerciseCount: l._count.exercises,
+          conceptSlugs: l.concepts.map((c) => c.concept.slug),
+        })),
+      ),
+    ),
+  );
+  const levelOrder = new Map(levels.map((l, i) => [l.code, i]));
+  return {
+    lessons,
+    concepts: concepts
+      .map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        description: c.description,
+        skill: c.skill,
+        levelCode: c.levelCode,
+        prerequisites: c.prerequisites.map((p) => p.prerequisite.slug),
+        lessonSlugs: c.lessons.filter((l) => !l.lesson.archivedAt).map((l) => l.lesson.slug),
+      }))
+      .sort((a, b) => (levelOrder.get(a.levelCode) ?? 0) - (levelOrder.get(b.levelCode) ?? 0)),
+  };
+}
+
+/** Independent and recall exercises from the given lessons, for mixed practice (browser-safe). */
+export async function getPracticePool(lessonIds: string[]): Promise<ClientExercise[]> {
+  "use cache";
+  if (lessonIds.length === 0) return [];
+  const rows = await prisma.exercise.findMany({
+    where: { lessonId: { in: lessonIds }, archivedAt: null, phase: { in: ["independent", "recall"] } },
+    orderBy: [{ lessonId: "asc" }, { order: "asc" }],
+  });
+  return rows.map(toClient);
+}

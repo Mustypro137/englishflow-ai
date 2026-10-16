@@ -88,7 +88,8 @@ function MistakeList({ title, id, mistakes, tz }: { title: string; id: string; m
             <li key={m.id} className="border-border bg-surface rounded-lg border p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="text-muted text-xs">
-                  {date.format(m.createdAt)} · {m.context === "review" ? "Review" : "Lesson"}
+                  {date.format(m.createdAt)} ·{" "}
+                  {m.context === "review" ? "Review" : m.context === "practice" ? "Mixed practice" : "Lesson"}
                   {m.conceptName ? ` · ${m.conceptName}` : ""}
                 </p>
                 {m.resolvedAt ? (

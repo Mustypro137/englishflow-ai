@@ -12,7 +12,7 @@ import { prisma } from "./client";
 
 export type PreferencesView = Pick<
   LearningPreferences,
-  "dailyMinutes" | "explanationStyle" | "translationSupport" | "textScale" | "reducedMotion"
+  "dailyMinutes" | "explanationStyle" | "translationSupport" | "textScale" | "reducedMotion" | "gamificationEnabled"
 >;
 
 export const DEFAULT_PREFERENCES: PreferencesView = {
@@ -21,6 +21,7 @@ export const DEFAULT_PREFERENCES: PreferencesView = {
   translationSupport: true,
   textScale: "normal",
   reducedMotion: false,
+  gamificationEnabled: true,
 };
 
 export async function getProfile(userId: string): Promise<Profile | null> {
@@ -30,8 +31,8 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 export async function getPreferences(userId: string): Promise<PreferencesView> {
   const prefs = await prisma.learningPreferences.findUnique({ where: { userId } });
   if (!prefs) return DEFAULT_PREFERENCES;
-  const { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion } = prefs;
-  return { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion };
+  const { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion, gamificationEnabled } = prefs;
+  return { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion, gamificationEnabled };
 }
 
 export async function completeOnboarding(userId: string, input: OnboardingInput): Promise<void> {
