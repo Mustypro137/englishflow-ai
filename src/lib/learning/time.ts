@@ -73,3 +73,9 @@ export function describeDue(due: Date, now: Date, timeZone: string): string {
   const date = new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" }).format(due);
   return `in ${days} days (${date})`;
 }
+
+/** The UTC instant of local midnight at the start of the given local date ("YYYY-MM-DD"). */
+export function startOfLocalDate(dateKey: string, timeZone: string): Date {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return localMidnight(y, m, d, timeZone);
+}

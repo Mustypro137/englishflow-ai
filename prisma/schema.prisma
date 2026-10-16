@@ -371,6 +371,7 @@ enum AttemptContext {
   lesson
   placement
   review
+  practice
 }
 
 enum MasteryState {

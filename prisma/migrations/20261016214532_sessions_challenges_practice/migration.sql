@@ -1,3 +1,6 @@
+-- AlterEnum
+ALTER TYPE "AttemptContext" ADD VALUE 'practice';
+
 -- AlterTable
 ALTER TABLE "concept_progress" ADD COLUMN     "masteredAt" TIMESTAMP(3);
 

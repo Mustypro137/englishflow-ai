@@ -153,3 +153,12 @@ describe("time zones", () => {
     expect(describeDue(new Date(now.getTime() + 20 * DAY), now, "UTC")).toBe("in 20 days (5 Nov)");
   });
 });
+
+describe("startOfLocalDate", () => {
+  it("returns local midnight in UTC, including across daylight-saving changes", async () => {
+    const { startOfLocalDate } = await import("@/lib/learning/time");
+    expect(startOfLocalDate("2026-10-20", "Africa/Lagos").toISOString()).toBe("2026-10-19T23:00:00.000Z");
+    expect(startOfLocalDate("2026-03-09", "America/New_York").toISOString()).toBe("2026-03-09T04:00:00.000Z");
+    expect(startOfLocalDate("2026-10-26", "Europe/London").toISOString()).toBe("2026-10-26T00:00:00.000Z");
+  });
+});
