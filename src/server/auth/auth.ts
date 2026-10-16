@@ -13,9 +13,23 @@ import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/validation/auth"
  */
 const requireEmailVerification = isEmailConfigured() && process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== "false";
 
+/**
+ * On Vercel, the same deployment is reachable at several addresses (the production
+ * domain, the per-deployment URL and the branch URL). Vercel exposes them as system
+ * environment variables; trusting them prevents "invalid origin" sign-in failures.
+ */
+const vercelOrigins = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+  .filter((host): host is string => Boolean(host))
+  .map((host) => `https://${host}`);
+
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined);
+
 export const auth = betterAuth({
   appName: "EnglishFlow AI",
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL,
+  trustedOrigins: vercelOrigins,
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, { provider: "postgresql" }),
 
