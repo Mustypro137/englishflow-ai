@@ -7,12 +7,14 @@ export default defineConfig({
   testDir: "e2e",
   globalTeardown: "./e2e/global-teardown.ts",
   fullyParallel: true,
+  // Locally the database is remote, so too many browsers at once just queue on it.
+  workers: process.env.CI ? undefined : 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // Database round trips from a development machine to a remote database can be slow,
   // so assertions that wait on a server response get more than the default 5 seconds.
-  expect: { timeout: 15_000 },
-  timeout: 60_000,
+  expect: { timeout: process.env.CI ? 15_000 : 30_000 },
+  timeout: process.env.CI ? 60_000 : 120_000,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL,

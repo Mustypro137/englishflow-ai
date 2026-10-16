@@ -27,7 +27,8 @@ export default defineConfig({
           globalSetup: ["tests/integration/global-setup.ts"],
           setupFiles: ["tests/integration/setup-env.ts"],
           fileParallelism: false,
-          testTimeout: 30_000,
+          // The development database is far away (≈250 ms per round trip), so allow time.
+          testTimeout: 90_000,
           hookTimeout: 120_000,
         },
       },

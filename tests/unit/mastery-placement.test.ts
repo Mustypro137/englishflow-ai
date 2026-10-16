@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyAttempt, applyExposure, EMPTY_PROGRESS, MASTERY_CONFIG } from "@/lib/learning/mastery";
+import { applyAttempt, applyExposure, applyReview, EMPTY_PROGRESS, MASTERY_CONFIG } from "@/lib/learning/mastery";
 import { estimatePlacement, estimateSection, type PlacementAnswer } from "@/lib/learning/placement";
 import type { Cefr } from "@content/schemas";
 
@@ -37,7 +37,38 @@ describe("concept progress", () => {
     expect(p.recentOutcomes).toHaveLength(MASTERY_CONFIG.recentWindow);
   });
 
-  it("never awards mastered from practice alone", () => {
+  it("awards mastered only after correct independent reviews on two separate days", () => {
+    let p = EMPTY_PROGRESS;
+    for (let i = 0; i < 4; i++) p = applyAttempt(p, { correct: true, independent: true }, now);
+    p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-17" }, now);
+    expect(p).toMatchObject({ reviewCorrectDays: 1, masteryState: "practicing" });
+    // A second correct review on the same day does not count as a new day.
+    p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-17" }, now);
+    expect(p).toMatchObject({ reviewCorrectDays: 1, masteryState: "practicing" });
+    p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-20" }, now);
+    expect(p).toMatchObject({ reviewCorrectDays: 2, masteryState: "mastered" });
+  });
+
+  it("does not count reviews answered with help", () => {
+    let p = EMPTY_PROGRESS;
+    for (let i = 0; i < 4; i++) p = applyAttempt(p, { correct: true, independent: true }, now);
+    p = applyReview(p, { correct: true, independent: false, dayKey: "2026-10-17" }, now);
+    p = applyReview(p, { correct: true, independent: false, dayKey: "2026-10-18" }, now);
+    expect(p).toMatchObject({ reviewCorrectDays: 0, masteryState: "practicing" });
+  });
+
+  it("a wrong review answer removes mastered and resets the day count", () => {
+    let p = EMPTY_PROGRESS;
+    for (let i = 0; i < 4; i++) p = applyAttempt(p, { correct: true, independent: true }, now);
+    p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-17" }, now);
+    p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-18" }, now);
+    expect(p.masteryState).toBe("mastered");
+    p = applyReview(p, { correct: false, independent: true, dayKey: "2026-10-25" }, now);
+    expect(p).toMatchObject({ reviewCorrectDays: 0 });
+    expect(p.masteryState).not.toBe("mastered");
+  });
+
+  it("lesson practice alone never awards mastered", () => {
     let p = EMPTY_PROGRESS;
     for (let i = 0; i < 50; i++) p = applyAttempt(p, { correct: true, independent: true }, now);
     expect(p.masteryState).toBe("practicing");

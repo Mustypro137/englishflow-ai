@@ -1,6 +1,6 @@
 # EnglishFlow AI — Development Roadmap
 
-_Last updated 2026-10-16. Milestones 1–3 complete; Milestones 4–8 not started._
+_Last updated 2026-10-16. Milestones 1–4 complete; Milestones 5–8 not started. Deployed at https://englishflow-ai.vercel.app._
 
 The milestones follow master prompt §21. Each one is a **coherent, usable increment**: implement → run tests → inspect the running app → fix → document limitations, then move on. "Smaller and working" beats "broad and incomplete".
 
@@ -11,7 +11,7 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 | 1 | Foundation shell | ✅ | None (GitHub/Vercel optional for first deploy) |
 | 2 | Database, auth, onboarding, profiles | ✅ | Neon (Resend still to configure) |
 | 3 | Curriculum, exercises, grading, placement v1 | ✅ | — |
-| 4 | Vocabulary, active recall, SRS, mistakes | ⬜ | — |
+| 4 | Vocabulary, active recall, SRS, mistakes | ✅ | — |
 | 5 | Dashboard, recommendations, planner, challenges | ⬜ | — |
 | 6 | AI tutor and AI-generated exercises | ⬜ | Anthropic API |
 | 7 | Listening, reading, writing, pronunciation, communication | ⬜ | TTS provider, object storage |
@@ -109,6 +109,8 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 ---
 
 ## Milestone 4 — Vocabulary, active recall, spaced repetition, mistake tracking
+
+**Status: ✅ complete (2026-10-16).** Verified with lint, typecheck, Prettier check, 97 unit tests (10 files, incl. scheduler, time zones/DST, mastery-via-reviews, vocabulary content), 31 integration tests (4 files: scheduling, mastery on two separate days, saved words, flashcards, notes, bookmarks, mistakes, cross-user isolation), a production build, and the full Playwright suite (126/127 passed in the full run; the one failure was a slow save under load and passed on rerun on desktop and phone). Bugs found by testing and fixed: a flashcard review card carried the flashcard's id instead of the review item's id (rating failed); fuzz made short intervals ±25%; per-file test cleanup deleted other files' users; transactions needed longer limits for a distant database. Delivered: SM-2-style scheduler, review queue (exercises/words/flashcards), 48 A1 words, notebook, mistake tracker, real mastery. Limitations: exercise reviews repeat the lesson item verbatim; vocabulary is A1 only and unreviewed.
 
 **Goal:** learners build a personal review queue that schedules correctly and persists.
 

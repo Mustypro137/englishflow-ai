@@ -87,7 +87,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "review",
     group: "study",
     milestone: 4,
-    status: "planned",
+    status: "available",
     primaryOnMobile: true,
   },
   {
@@ -110,7 +110,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "vocabulary",
     group: "study",
     milestone: 4,
-    status: "planned",
+    status: "available",
   },
   {
     id: "challenges",
@@ -206,7 +206,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "notebook",
     group: "support",
     milestone: 4,
-    status: "planned",
+    status: "available",
   },
   {
     id: "mistakes",
@@ -216,7 +216,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "mistakes",
     group: "support",
     milestone: 4,
-    status: "planned",
+    status: "available",
   },
   {
     id: "progress",

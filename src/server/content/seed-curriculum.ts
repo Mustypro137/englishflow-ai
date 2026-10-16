@@ -23,6 +23,7 @@ export interface SeedSummary {
   publishedLessons: number;
   exercises: number;
   placementItems: number;
+  vocabularyEntries: number;
   archived: number;
 }
 
@@ -165,6 +166,26 @@ export async function seedCurriculum(prisma: PrismaClient, content: ValidatedCon
     ),
   });
 
+  // Vocabulary entries
+  const vocab = content.vocabulary.flatMap((set) => set.entries.map((e) => ({ e, levelCode: set.level })));
+  await mapLimit(vocab, CONCURRENCY, ({ e, levelCode }) => {
+    const data = {
+      headword: e.headword,
+      partOfSpeech: e.partOfSpeech,
+      levelCode,
+      topic: e.topic,
+      definition: e.definition,
+      examples: e.examples,
+      collocations: e.collocations,
+      ipa: e.ipa ?? null,
+      usageNote: e.usageNote ?? null,
+      commonErrors: (e.commonErrors ?? []) as Prisma.InputJsonValue,
+      cloze: e.cloze as Prisma.InputJsonValue,
+      archivedAt: null,
+    };
+    return prisma.vocabularyEntry.upsert({ where: { slug: e.slug }, create: { slug: e.slug, ...data }, update: data });
+  });
+
   // Archive anything no longer in the content files.
   const now = new Date();
   const archived = await Promise.all([
@@ -184,6 +205,10 @@ export async function seedCurriculum(prisma: PrismaClient, content: ValidatedCon
       where: { slug: { notIn: [...exerciseIds.keys()] }, archivedAt: null, source: "seed" },
       data: { archivedAt: now },
     }),
+    prisma.vocabularyEntry.updateMany({
+      where: { slug: { notIn: vocab.map((v) => v.e.slug) }, archivedAt: null },
+      data: { archivedAt: now },
+    }),
   ]);
 
   return {
@@ -195,6 +220,7 @@ export async function seedCurriculum(prisma: PrismaClient, content: ValidatedCon
     publishedLessons: lessons.filter(({ l }) => l.status === "published").length,
     exercises: exercises.length - content.placement.length,
     placementItems: content.placement.length,
+    vocabularyEntries: vocab.length,
     archived: archived.reduce((sum, r) => sum + r.count, 0),
   };
 }

@@ -32,7 +32,10 @@ function createPrismaClient() {
   const pool = new Pool({
     connectionString,
     max: 10,
-    idleTimeoutMillis: 30_000,
+    idleTimeoutMillis: 20_000,
+    // Replace connections now and then so none get old enough for the network to cut them.
+    // (Not too often: each new connection costs a secure handshake.)
+    maxLifetimeSeconds: 300,
     connectionTimeoutMillis: 15_000,
     keepAlive: true,
   });
@@ -43,7 +46,12 @@ function createPrismaClient() {
   const schema = process.env.DATABASE_SCHEMA;
   const adapter = new PrismaPg(pool, schema ? { schema } : undefined);
 
-  const client = new PrismaClient({ adapter }).$extends({
+  const client = new PrismaClient({
+    adapter,
+    // Defaults (2 s to start, 5 s to finish) are too tight when the database is far away or a
+    // network round trip stalls; these limits still stop a stuck transaction from hanging forever.
+    transactionOptions: { maxWait: 10_000, timeout: 20_000 },
+  }).$extends({
     query: {
       // If the server reset a pooled connection, retry once on a fresh one —
       // but only for operations that are safe to repeat.

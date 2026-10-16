@@ -10,6 +10,8 @@ import { Container } from "@/components/ui/container";
 import { requireUser } from "@/server/auth/session";
 import { getLessonBySlug } from "@/server/db/curriculum";
 import { getLessonHistory } from "@/server/db/learning-records";
+import { isBookmarked } from "@/server/db/notebook";
+import { BookmarkButton } from "@/components/lesson/bookmark-button";
 
 export const metadata: Metadata = { title: "Lesson" };
 
@@ -18,18 +20,24 @@ export default async function LessonPage({ params }: PageProps<"/app/learn/[less
   const { lessonSlug } = await params;
   const lesson = await getLessonBySlug(lessonSlug);
   if (!lesson) notFound();
-  const { summary, byExercise } = await getLessonHistory(user.id, lesson.id);
+  const [{ summary, byExercise }, bookmarked] = await Promise.all([
+    getLessonHistory(user.id, lesson.id),
+    isBookmarked(user.id, lesson.id),
+  ]);
 
   return (
     <LessonProgressProvider lessonSlug={lesson.slug} initial={summary}>
       <Container width="narrow" className="space-y-12 py-8 sm:py-10">
         <header className="space-y-4">
-          <Link
-            href="/app/learn"
-            className="text-muted hover:text-ink inline-flex items-center gap-1.5 rounded-sm text-sm"
-          >
-            <ArrowLeft aria-hidden className="size-4" /> Curriculum
-          </Link>
+          <div className="flex items-center justify-between gap-2">
+            <Link
+              href="/app/learn"
+              className="text-muted hover:text-ink inline-flex items-center gap-1.5 rounded-sm text-sm"
+            >
+              <ArrowLeft aria-hidden className="size-4" /> Curriculum
+            </Link>
+            <BookmarkButton lessonSlug={lesson.slug} initial={bookmarked} />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="primary">{lesson.levelCode}</Badge>
             <span className="text-muted text-sm">{lesson.unitTitle}</span>
@@ -98,8 +106,8 @@ export default async function LessonPage({ params }: PageProps<"/app/learn/[less
             ))}
           </ul>
           <p className="text-muted mt-3 text-sm">
-            Answering every exercise completes the lesson. Real mastery comes from remembering it later: reviews that
-            bring these points back over the coming days are the next feature being built.
+            Answering every exercise completes the lesson. Mastery comes later: each exercise returns in your reviews,
+            and a topic counts as mastered once you answer it correctly from memory on two separate days.
           </p>
         </Section>
       </Container>

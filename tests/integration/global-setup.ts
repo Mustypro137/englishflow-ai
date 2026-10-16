@@ -1,8 +1,12 @@
 import { execSync } from "node:child_process";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { Client } from "pg";
+import { validateContent } from "@content/validate";
+import { PrismaClient } from "@/generated/prisma/client";
+import { seedCurriculum } from "@/server/content/seed-curriculum";
 import { TEST_SCHEMA, testDatabaseUrl, withSchema } from "./test-db";
 
-/** Recreate the isolated test schema and apply all migrations to it. */
+/** Recreate the isolated test schema, apply all migrations and load the curriculum once. */
 export default async function setup() {
   const url = testDatabaseUrl();
   const client = new Client({ connectionString: url });
@@ -18,4 +22,11 @@ export default async function setup() {
     stdio: "pipe",
     env: { ...process.env, PRISMA_MIGRATE_URL: withSchema(url, TEST_SCHEMA) },
   });
+
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }, { schema: TEST_SCHEMA }) });
+  try {
+    await seedCurriculum(prisma, validateContent());
+  } finally {
+    await prisma.$disconnect();
+  }
 }

@@ -6,7 +6,13 @@ import { fieldErrors, onboardingSchema, preferencesUpdateSchema, profileUpdateSc
 import { requireUser } from "@/server/auth/session";
 import { completeOnboarding, updatePreferences, updateProfile } from "@/server/db/learner-profile";
 
-export type FormState = { status: "idle" | "error" | "success"; message?: string; errors?: Record<string, string> };
+export type FormState = {
+  status: "idle" | "error" | "success";
+  message?: string;
+  errors?: Record<string, string>;
+  /** Set on success; lets "create" forms reset themselves by re-mounting. */
+  savedAt?: number;
+};
 
 /** Read a form into a plain object; repeated fields (checkbox groups) become arrays. */
 function formToObject(formData: FormData, arrayFields: string[] = []): Record<string, unknown> {

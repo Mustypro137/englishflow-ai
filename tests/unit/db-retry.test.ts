@@ -6,6 +6,8 @@ describe("isConnectionClosed", () => {
     expect(isConnectionClosed({ code: "ECONNRESET" })).toBe(true);
     expect(isConnectionClosed({ meta: { driverAdapterError: { cause: { kind: "ConnectionClosed" } } } })).toBe(true);
     expect(isConnectionClosed(new Error("driverAdapterError: DriverAdapterError: ConnectionClosed"))).toBe(true);
+    expect(isConnectionClosed(new Error("Client has encountered a connection error and is not queryable"))).toBe(true);
+    expect(isConnectionClosed(new Error("Connection terminated unexpectedly"))).toBe(true);
   });
 
   it("does not retry other errors", () => {

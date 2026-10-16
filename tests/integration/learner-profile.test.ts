@@ -13,7 +13,7 @@ import type { OnboardingInput } from "@/lib/validation/profile";
 
 async function createUser(name: string) {
   return prisma.user.create({
-    data: { id: randomUUID(), name, email: `${randomUUID()}@example.test`, emailVerified: true },
+    data: { id: randomUUID(), name, email: `${randomUUID()}@profile.example.test`, emailVerified: true },
   });
 }
 
@@ -29,7 +29,7 @@ const onboarding = (overrides: Partial<OnboardingInput> = {}): OnboardingInput =
 });
 
 // Belt and braces: tests run in an isolated schema AND only ever delete their own test users.
-const testUsers = { email: { endsWith: "@example.test" } };
+const testUsers = { email: { endsWith: "@profile.example.test" } };
 
 beforeEach(async () => {
   await prisma.user.deleteMany({ where: testUsers });

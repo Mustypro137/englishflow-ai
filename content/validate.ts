@@ -2,12 +2,20 @@
  * Validate all curriculum content: each file against its schema, plus checks that
  * need the whole curriculum (unique slugs, prerequisites that exist and have no cycles).
  */
-import { curriculum, placementItems } from "./index";
-import { levelSchema, placementItemSchema, type ParsedLevel, type PlacementItem } from "./schemas";
+import { curriculum, placementItems, vocabulary as vocabularySets } from "./index";
+import {
+  levelSchema,
+  placementItemSchema,
+  type ParsedLevel,
+  type PlacementItem,
+  type VocabularySet,
+  vocabularySetSchema,
+} from "./schemas";
 
 export interface ValidatedContent {
   levels: ParsedLevel[];
   placement: PlacementItem[];
+  vocabulary: VocabularySet[];
 }
 
 export class ContentError extends Error {
@@ -19,6 +27,7 @@ export class ContentError extends Error {
 export function validateContent(
   rawLevels: unknown[] = curriculum,
   rawPlacement: unknown[] = placementItems,
+  rawVocabulary: unknown[] = vocabularySets,
 ): ValidatedContent {
   const problems: string[] = [];
   const levels: ParsedLevel[] = [];
@@ -32,6 +41,13 @@ export function validateContent(
     const r = placementItemSchema.safeParse(raw);
     if (r.success) placement.push(r.data);
     else for (const issue of r.error.issues) problems.push(`placement[${i}] ${issue.path.join(".")}: ${issue.message}`);
+  }
+  const vocabulary: VocabularySet[] = [];
+  for (const [i, raw] of rawVocabulary.entries()) {
+    const r = vocabularySetSchema.safeParse(raw);
+    if (r.success) vocabulary.push(r.data);
+    else
+      for (const issue of r.error.issues) problems.push(`vocabulary[${i}] ${issue.path.join(".")}: ${issue.message}`);
   }
   if (problems.length) throw new ContentError(problems);
 
@@ -73,6 +89,10 @@ export function validateContent(
     lessons.map((l) => l.slug),
   );
   dupes(
+    "vocabulary entry",
+    vocabulary.flatMap((v) => v.entries.map((e) => e.slug)),
+  );
+  dupes(
     "exercise",
     exercises.map((e) => e.slug),
   );
@@ -106,5 +126,5 @@ export function validateContent(
   for (const slug of graph.keys()) visit(slug, []);
 
   if (problems.length) throw new ContentError(problems);
-  return { levels, placement };
+  return { levels, placement, vocabulary };
 }

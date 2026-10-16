@@ -73,8 +73,15 @@ describe("getNavModules", () => {
     expect(result.map((m) => m.id)).toEqual(["a", "c"]);
   });
 
-  it("shows only modules that work: Curriculum and Settings so far", () => {
-    expect(getNavModules().map((m) => m.id)).toEqual(["learn", "settings"]);
+  it("shows only modules that work", () => {
+    expect(getNavModules().map((m) => m.id)).toEqual([
+      "learn",
+      "review",
+      "vocabulary",
+      "notebook",
+      "mistakes",
+      "settings",
+    ]);
   });
 });
 

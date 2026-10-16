@@ -19,4 +19,8 @@ export const APP_ROUTES = [
   "/app/learn",
   "/app/learn/a1-subject-pronouns-and-be",
   "/app/placement",
+  "/app/review",
+  "/app/vocabulary",
+  "/app/notebook",
+  "/app/mistakes",
 ] as const;

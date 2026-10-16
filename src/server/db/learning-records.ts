@@ -2,10 +2,13 @@ import "server-only";
 import type { Cefr } from "@content/schemas";
 import type { Prisma } from "@/generated/prisma/client";
 import { type GradeResult, gradeExercise, InvalidResponseError } from "@/lib/learning/grading/grade-exercise";
-import { applyAttempt, applyExposure, type ConceptProgressCounts, EMPTY_PROGRESS } from "@/lib/learning/mastery";
+import { applyAttempt, applyExposure, EMPTY_PROGRESS } from "@/lib/learning/mastery";
 import { estimatePlacement, type PlacementEstimate } from "@/lib/learning/placement";
+import { cardAfterLesson } from "@/lib/learning/srs/scheduler";
 import { prisma } from "./client";
 import { getExercisesForGrading, getLessonExerciseIds } from "./curriculum";
+import { trackAnswer } from "./mistakes";
+import { loadProgressMap, saveProgress } from "./progress";
 
 /*
  * Learner learning records. Every function takes the signed-in learner's userId
@@ -15,29 +18,6 @@ import { getExercisesForGrading, getLessonExerciseIds } from "./curriculum";
 export { InvalidResponseError };
 
 type Tx = Prisma.TransactionClient;
-
-async function loadProgress(tx: Tx, userId: string, conceptId: string): Promise<ConceptProgressCounts> {
-  const row = await tx.conceptProgress.findUnique({ where: { userId_conceptId: { userId, conceptId } } });
-  return row ?? EMPTY_PROGRESS;
-}
-
-async function saveProgress(tx: Tx, userId: string, conceptId: string, p: ConceptProgressCounts) {
-  const data = {
-    exposures: p.exposures,
-    attempts: p.attempts,
-    correct: p.correct,
-    independentCorrect: p.independentCorrect,
-    recentOutcomes: p.recentOutcomes,
-    masteryState: p.masteryState,
-    lastExposedAt: p.lastExposedAt,
-    lastPracticedAt: p.lastPracticedAt,
-  };
-  await tx.conceptProgress.upsert({
-    where: { userId_conceptId: { userId, conceptId } },
-    create: { userId, conceptId, ...data },
-    update: data,
-  });
-}
 
 /** Opening a lesson counts as exposure to its concepts — never as practice or mastery. */
 export async function recordLessonView(userId: string, lessonSlug: string): Promise<void> {
@@ -53,8 +33,10 @@ export async function recordLessonView(userId: string, lessonSlug: string): Prom
       create: { userId, lessonId: lesson.id },
       update: { lastViewedAt: now, viewCount: { increment: 1 } },
     });
-    for (const { conceptId } of lesson.concepts) {
-      await saveProgress(tx, userId, conceptId, applyExposure(await loadProgress(tx, userId, conceptId), now));
+    const conceptIds = lesson.concepts.map((c) => c.conceptId);
+    const progress = await loadProgressMap(tx, userId, conceptIds);
+    for (const conceptId of conceptIds) {
+      await saveProgress(tx, userId, conceptId, applyExposure(progress.get(conceptId) ?? EMPTY_PROGRESS, now));
     }
   });
 }
@@ -85,10 +67,9 @@ export async function recordAttempt(
   const now = new Date();
   const lessonId = record.lessonId;
 
-  // Attempt and concept progress are written together; all progress rows are read in one query.
+  // Attempt, concept progress, the review schedule and mistakes are written together.
   await prisma.$transaction(async (tx) => {
-    const existing = await tx.conceptProgress.findMany({ where: { userId, conceptId: { in: record.conceptIds } } });
-    const byConcept = new Map(existing.map((row) => [row.conceptId, row]));
+    const byConcept = await loadProgressMap(tx, userId, record.conceptIds);
     await tx.exerciseAttempt.create({
       data: {
         userId,
@@ -110,6 +91,26 @@ export async function recordAttempt(
       );
       await saveProgress(tx, userId, conceptId, next);
     }
+    // Practised in a lesson → comes back for a delayed review tomorrow (once per exercise).
+    const card = cardAfterLesson(now);
+    await tx.reviewItem.upsert({
+      where: { userId_exerciseId: { userId, exerciseId: record.id } },
+      create: { userId, itemType: "exercise", exerciseId: record.id, ...card },
+      update: {},
+    });
+    await trackAnswer(
+      tx,
+      userId,
+      {
+        exerciseId: record.id,
+        exercise: record.exercise,
+        conceptIds: record.conceptIds,
+        response: input.response,
+        result,
+        context: "lesson",
+      },
+      now,
+    );
   });
 
   const progress = await lessonSummary(prisma, userId, lessonId);

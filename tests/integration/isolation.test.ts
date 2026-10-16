@@ -5,12 +5,12 @@ import { prisma } from "@/server/db/client";
 import { TEST_SCHEMA, testDatabaseUrl } from "./test-db";
 
 afterAll(async () => {
-  await prisma.user.deleteMany({ where: { email: { endsWith: "@example.test" } } });
+  await prisma.user.deleteMany({ where: { email: { endsWith: "@isolation.example.test" } } });
   await prisma.$disconnect();
 });
 
 it("writes to the isolated test schema, never to the development schema", async () => {
-  const email = `${randomUUID()}@example.test`;
+  const email = `${randomUUID()}@isolation.example.test`;
   await prisma.user.create({ data: { id: randomUUID(), name: "Probe", email, emailVerified: false } });
 
   const client = new Client({ connectionString: testDatabaseUrl() });

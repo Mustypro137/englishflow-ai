@@ -1,4 +1,4 @@
-import { ArrowRight, Compass, PartyPopper, Settings } from "lucide-react";
+import { ArrowRight, Compass, Layers, PartyPopper, Settings } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -10,16 +10,18 @@ import { requireUser } from "@/server/auth/session";
 import { getCurriculumOverview } from "@/server/db/curriculum";
 import { getCurriculumProgress, getLatestPlacement } from "@/server/db/learning-records";
 import { getPreferences, getProfile } from "@/server/db/learner-profile";
+import { getReviewOverview } from "@/server/db/reviews";
 
 export default async function LearnerHomePage() {
   const user = await requireUser();
   const profile = await getProfile(user.id);
   if (!profile?.onboardingCompletedAt) redirect("/app/onboarding");
-  const [prefs, levels, progress, placement] = await Promise.all([
+  const [prefs, levels, progress, placement, reviews] = await Promise.all([
     getPreferences(user.id),
     getCurriculumOverview(),
     getCurriculumProgress(user.id),
     getLatestPlacement(user.id),
+    getReviewOverview(user.id),
   ]);
 
   const next = pickNextLesson(levels, (id) => progress[id]?.completed ?? false, profile.estimatedLevel);
@@ -34,6 +36,34 @@ export default async function LearnerHomePage() {
         <h1 className="text-ink text-2xl font-semibold tracking-tight sm:text-3xl">Welcome, {profile.displayName}</h1>
         <p className="text-muted mt-2">Pick up where you left off.</p>
       </div>
+
+      {reviews.total > 0 ? (
+        <section
+          aria-labelledby="reviews-heading"
+          className="border-border bg-surface flex flex-col gap-4 rounded-lg border p-5 sm:flex-row sm:items-center sm:p-6"
+        >
+          <Layers aria-hidden className="text-primary size-8 shrink-0" />
+          <div className="flex-1">
+            <h2 id="reviews-heading" className="text-ink font-semibold">
+              {reviews.dueNow > 0
+                ? `${reviews.dueNow} ${reviews.dueNow === 1 ? "review" : "reviews"} due now`
+                : "You're up to date with reviews"}
+            </h2>
+            <p className="text-muted mt-1 text-sm">
+              {reviews.dueNow > 0
+                ? "A few minutes of recall now keeps what you learned from fading."
+                : reviews.nextDue
+                  ? `Your next review is ${reviews.nextDue.label}.`
+                  : "No reviews scheduled."}
+            </p>
+          </div>
+          {reviews.dueNow > 0 ? (
+            <Link href="/app/review" className={buttonClasses()}>
+              Start reviewing
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
 
       <section aria-labelledby="continue-heading" className="border-border bg-surface rounded-lg border p-5 sm:p-6">
         <h2 id="continue-heading" className="text-muted text-sm font-semibold tracking-wide uppercase">

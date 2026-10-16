@@ -162,7 +162,15 @@ export function ExerciseCard({
   );
 }
 
-function Feedback({ result, revealed, onReveal }: { result: GradeResult; revealed: boolean; onReveal: () => void }) {
+export function Feedback({
+  result,
+  revealed,
+  onReveal,
+}: {
+  result: GradeResult;
+  revealed: boolean;
+  onReveal: () => void;
+}) {
   if (result.correct) {
     return (
       <div className="bg-success-soft text-ink rounded-md p-4">

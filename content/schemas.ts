@@ -259,3 +259,29 @@ export type PayloadFor<T extends ExerciseTypeName> = Extract<ExerciseInput, { ty
 /** Helper for authoring with type checking. */
 export const defineLevel = (level: LevelContent) => level;
 export const definePlacement = (items: z.input<typeof placementItemSchema>[]) => items;
+
+// --- Vocabulary --------------------------------------------------------------
+
+export const vocabularyEntrySchema = z
+  .object({
+    slug,
+    headword: text,
+    partOfSpeech: z.enum(["noun", "verb", "adjective", "adverb", "phrase", "preposition"]),
+    topic: text,
+    /** Simple English definition (no translation). */
+    definition: text,
+    examples: z.array(text).min(2),
+    collocations: z.array(text).min(1),
+    /** British English pronunciation (IPA), when available. */
+    ipa: text.optional(),
+    usageNote: text.optional(),
+    commonErrors: z.array(z.object({ wrong: text, right: text, why: text })).optional(),
+    /** Recall prompt: a sentence with one ___ for the word, and the accepted answers. */
+    cloze: z.object({ text, accepted }),
+  })
+  .refine((v) => v.cloze.text.split(BLANK).length === 2, "The cloze sentence needs exactly one ___.");
+export type VocabularyContent = z.infer<typeof vocabularyEntrySchema>;
+
+export const vocabularySetSchema = z.object({ level: cefrSchema, entries: z.array(vocabularyEntrySchema).min(1) });
+export type VocabularySet = z.infer<typeof vocabularySetSchema>;
+export const defineVocabulary = (set: z.input<typeof vocabularySetSchema>) => set;

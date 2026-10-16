@@ -32,6 +32,13 @@ model User {
   conceptProgress  ConceptProgress[]
   lessonProgress   LessonProgress[]
   placementResults PlacementResult[]
+  savedWords       SavedWord[]
+  flashcards       Flashcard[]
+  reviewItems      ReviewItem[]
+  reviewLogs       ReviewLog[]
+  mistakes         MistakeRecord[]
+  notes            Note[]
+  bookmarks        Bookmark[]
 
   @@map("user")
 }
@@ -268,6 +275,8 @@ model Lesson {
   concepts         LessonConcept[]
   exercises        Exercise[]
   progress         LessonProgress[]
+  notes            Note[]
+  bookmarks        Bookmark[]
 
   @@index([unitId, order])
   @@map("lesson")
@@ -286,6 +295,7 @@ model Concept {
   lessons       LessonConcept[]
   exercises     ExerciseConcept[]
   progress      ConceptProgress[]
+  mistakes      MistakeRecord[]
 
   @@map("concept")
 }
@@ -333,6 +343,8 @@ model Exercise {
   archivedAt       DateTime?
   concepts         ExerciseConcept[]
   attempts         ExerciseAttempt[]
+  reviewItems      ReviewItem[]
+  mistakes         MistakeRecord[]
 
   @@index([lessonId, order])
   @@index([phase, placementSection])
@@ -356,6 +368,7 @@ model ExerciseConcept {
 enum AttemptContext {
   lesson
   placement
+  review
 }
 
 enum MasteryState {
@@ -389,22 +402,25 @@ model ExerciseAttempt {
 }
 
 model ConceptProgress {
-  id                 String       @id @default(cuid())
-  userId             String
-  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conceptId          String
-  concept            Concept      @relation(fields: [conceptId], references: [id], onDelete: Cascade)
-  exposures          Int          @default(0)
-  attempts           Int          @default(0)
-  correct            Int          @default(0)
-  independentCorrect Int          @default(0)
+  id                   String       @id @default(cuid())
+  userId               String
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conceptId            String
+  concept              Concept      @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  exposures            Int          @default(0)
+  attempts             Int          @default(0)
+  correct              Int          @default(0)
+  independentCorrect   Int          @default(0)
   /// Most recent outcomes, newest last, capped at 10.
-  recentOutcomes     Boolean[]
-  lastExposedAt      DateTime?
-  lastPracticedAt    DateTime?
-  masteryState       MasteryState @default(new)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  recentOutcomes       Boolean[]
+  lastExposedAt        DateTime?
+  lastPracticedAt      DateTime?
+  masteryState         MasteryState @default(new)
+  /// Separate local days with a correct, independent delayed-review answer (reset by a lapse).
+  reviewCorrectDays    Int          @default(0)
+  lastReviewCorrectDay String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   @@unique([userId, conceptId])
   @@map("concept_progress")
@@ -441,4 +457,189 @@ model PlacementResult {
 
   @@index([userId, completedAt])
   @@map("placement_result")
+}
+
+// ---------------------------------------------------------------------------
+// Vocabulary (shared content) and learner vocabulary, flashcards and reviews
+// ---------------------------------------------------------------------------
+
+model VocabularyEntry {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  headword     String
+  partOfSpeech String
+  levelCode    CefrLevel
+  topic        String
+  definition   String
+  examples     String[]
+  collocations String[]
+  ipa          String?
+  usageNote    String?
+  /// [{ wrong, right, why }]
+  commonErrors Json?
+  /// Recall prompt: { text: "… ___ …", accepted: [...] }
+  cloze        Json
+  reviewStatus String      @default("pending_human_review")
+  archivedAt   DateTime?
+  savedBy      SavedWord[]
+
+  @@index([levelCode, topic])
+  @@map("vocabulary_entry")
+}
+
+model SavedWord {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyEntryId String
+  entry             VocabularyEntry @relation(fields: [vocabularyEntryId], references: [id])
+  note              String?
+  createdAt         DateTime        @default(now())
+  reviewItem        ReviewItem?
+
+  @@unique([userId, vocabularyEntryId])
+  @@map("saved_word")
+}
+
+model Flashcard {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  front      String
+  back       String
+  note       String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  reviewItem ReviewItem?
+
+  @@index([userId, createdAt])
+  @@map("flashcard")
+}
+
+enum ReviewItemType {
+  exercise
+  vocabulary
+  flashcard
+}
+
+enum SrsState {
+  new
+  learning
+  review
+  relearning
+}
+
+enum ReviewRating {
+  again
+  hard
+  good
+  easy
+}
+
+/// One schedulable thing to review: a lesson exercise, a saved word or a flashcard.
+model ReviewItem {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemType       ReviewItemType
+  exerciseId     String?
+  exercise       Exercise?      @relation(fields: [exerciseId], references: [id])
+  savedWordId    String?        @unique
+  savedWord      SavedWord?     @relation(fields: [savedWordId], references: [id], onDelete: Cascade)
+  flashcardId    String?        @unique
+  flashcard      Flashcard?     @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  state          SrsState       @default(new)
+  step           Int            @default(0)
+  ease           Float          @default(2.5)
+  intervalDays   Int            @default(0)
+  reps           Int            @default(0)
+  lapses         Int            @default(0)
+  dueAt          DateTime
+  lastReviewedAt DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  logs           ReviewLog[]
+
+  @@unique([userId, exerciseId])
+  @@index([userId, dueAt])
+  @@map("review_item")
+}
+
+model ReviewLog {
+  id                   String       @id @default(cuid())
+  reviewItemId         String
+  reviewItem           ReviewItem   @relation(fields: [reviewItemId], references: [id], onDelete: Cascade)
+  userId               String
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating               ReviewRating
+  /// For graded items (exercises, typed words); null for self-rated flashcards.
+  correct              Boolean?
+  previousState        SrsState
+  nextState            SrsState
+  previousIntervalDays Int
+  nextIntervalDays     Int
+  reviewedAt           DateTime     @default(now())
+
+  @@index([userId, reviewedAt])
+  @@map("review_log")
+}
+
+// ---------------------------------------------------------------------------
+// Mistakes, notes and bookmarks
+// ---------------------------------------------------------------------------
+
+model MistakeRecord {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId     String
+  exercise       Exercise       @relation(fields: [exerciseId], references: [id])
+  conceptId      String?
+  concept        Concept?       @relation(fields: [conceptId], references: [id])
+  context        AttemptContext
+  originalAnswer String
+  correctAnswer  String
+  explanation    String
+  feedback       String?
+  /// Later answers to the same exercise, and how many were correct.
+  laterAttempts  Int            @default(0)
+  laterCorrect   Int            @default(0)
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, exerciseId])
+  @@map("mistake_record")
+}
+
+enum NoteKind {
+  grammar_note
+  saved_sentence
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      NoteKind
+  body      String
+  lessonId  String?
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("note")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@map("bookmark")
 }

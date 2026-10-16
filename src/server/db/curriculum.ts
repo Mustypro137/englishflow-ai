@@ -3,6 +3,7 @@ import {
   type ApplicationTask,
   applicationTaskSchema,
   type Cefr,
+  type ExerciseContent,
   exerciseSchema,
   type LessonBlock,
   lessonBlockSchema,
@@ -10,7 +11,6 @@ import {
 import { z } from "zod";
 import type { Exercise } from "@/generated/prisma/client";
 import { type ClientExercise, toClientExercise } from "@/lib/learning/client-exercise";
-import type { GradableExercise } from "@/lib/learning/grading/grade-exercise";
 import { prisma } from "./client";
 
 /*
@@ -168,7 +168,7 @@ export async function getLessonBySlug(slug: string): Promise<LessonView | null> 
 }
 
 export interface GradingRecord {
-  exercise: GradableExercise;
+  exercise: ExerciseContent;
   id: string;
   lessonId: string | null;
   phase: Exercise["phase"];

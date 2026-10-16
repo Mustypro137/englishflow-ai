@@ -2,8 +2,8 @@
 
 An English-learning platform for learners from A1 (beginner) to C2 (proficient). It combines structured lessons, active recall, spaced repetition, skill practice and an AI tutor, with the goal of **independent ability**: understanding English, remembering it and producing it without help.
 
-> **Status: Milestones 1–3 of 8 complete.**
-> Public website, accounts, onboarding and settings, a structured A1–C2 curriculum with **8 complete A1 lessons**, 8 exercise types graded on the server, saved progress, and an approximate placement check. Spaced-repetition reviews, the dashboard and the AI tutor are **not built yet**. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
+> **Status: Milestones 1–4 of 8 complete. Live at https://englishflow-ai.vercel.app**
+> Accounts, a structured A1–C2 curriculum with **8 complete A1 lessons**, server-graded exercises, a placement check, **spaced-repetition reviews**, **48 A1 vocabulary words**, a personal notebook (flashcards, notes, bookmarks) and a mistake tracker. The dashboard, study planner and AI tutor are **not built yet**. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
 
 ## Run it on your computer
 
@@ -91,6 +91,16 @@ e2e/                         Playwright browser and accessibility tests
 
 ## Completed features
 
+**Milestone 4: vocabulary, active recall, spaced repetition, mistakes.**
+- Review queue mixing three kinds of item: lesson exercises (they return the next day and must be answered from memory, graded on the server), saved words (alternating "type the word from its meaning" and "what does it mean?") and your own flashcards.
+- SM-2-style scheduler: learning steps (10 min, 1 day), Again/Hard/Good/Easy, growing intervals, a lapse brings the item back within minutes, stable 5% spread on long intervals. "Due today" uses the learner's own time zone, including daylight-saving days. Every review is logged.
+- Next review dates shown everywhere: review schedule, saved words, flashcards.
+- Vocabulary: 48 A1 words in six topics with definitions in simple English, examples, collocations, British pronunciation (IPA), usage notes and common errors. Save/remove any word.
+- Notebook: create, edit and delete flashcards and notes (grammar notes, useful sentences, optional link to a lesson); bookmark lessons.
+- Mistake tracker: your answer, the correct answer, the explanation, the topic, the date and how you did later; mistakes are marked fixed when you later answer correctly; "topics to practise" groups recurring mistakes; delete any record.
+- **"Mastered" is now real**: a topic is mastered only after correct answers from memory, without help, in reviews on two separate days, with high recent accuracy. A wrong review removes it.
+- Home page shows how many reviews are due.
+
 **Milestone 3: curriculum, exercises, grading, placement.** Verified on 2026-10-16 (see the roadmap for the exact test counts):
 - Curriculum structure for A1–C2 (levels → modules → units → lessons, 50 concepts with prerequisites). **8 complete A1 lessons**; A2–C2 are outlined and shown as "coming soon".
 - Each lesson: objective, explanation with examples, a rule, a table, common mistakes, guided practice (with hints), independent practice, memory check, an application task with model answers and a self-check list, and mastery criteria.
@@ -117,7 +127,9 @@ e2e/                         Playwright browser and accessibility tests
 
 - **Lesson content was written with AI assistance and has not yet been reviewed by an English teacher.** Every lesson shows a "draft" note. Automated checks confirm that every listed answer is graded correctly, but a human review is still needed before launch.
 - Only A1 has lessons (8 of 12 planned). A2–C2 are outlines.
-- No spaced-repetition reviews, vocabulary notebook, mistake tracker, dashboard statistics or AI tutor yet (Milestones 4–8).
+- No dashboard statistics, study planner, challenges or AI tutor yet (Milestones 5–8).
+- Vocabulary covers A1 only (48 words) and, like the lessons, awaits review by an English teacher.
+- Reviews ask exercises exactly as in the lesson; varied re-phrasings come with AI-generated practice (Milestone 6).
 - The application ("Use it") task is self-checked and not saved; AI feedback on free writing comes in Milestone 6.
 - The placement check is short (30 questions) and section-based, not adaptive. It is an estimate only.
 - A not-written lesson URL shows "Page not found", but with HTTP status 200 rather than 404 (a Next.js streaming limitation; the page is marked noindex).

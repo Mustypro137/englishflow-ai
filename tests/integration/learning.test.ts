@@ -16,12 +16,12 @@ import {
 import { completeOnboarding } from "@/server/db/learner-profile";
 
 const content = validateContent();
-const testUsers = { email: { endsWith: "@example.test" } };
+const testUsers = { email: { endsWith: "@learning.example.test" } };
 const LESSON = "a1-subject-pronouns-and-be";
 
 async function createLearner() {
   const user = await prisma.user.create({
-    data: { id: randomUUID(), name: "Learner", email: `${randomUUID()}@example.test`, emailVerified: true },
+    data: { id: randomUUID(), name: "Learner", email: `${randomUUID()}@learning.example.test`, emailVerified: true },
   });
   await completeOnboarding(user.id, {
     displayName: "Learner",
@@ -58,8 +58,8 @@ async function exerciseId(slug: string) {
 
 beforeAll(async () => {
   await prisma.user.deleteMany({ where: testUsers });
-  await seedCurriculum(prisma, content);
-}, 180_000);
+  // The curriculum is loaded once by global-setup.ts.
+});
 
 afterAll(async () => {
   await prisma.user.deleteMany({ where: testUsers });
@@ -204,7 +204,7 @@ describe("recording practice", () => {
     expect(last!.progress).toMatchObject({ answered: all.length, total: all.length, completed: true });
     const progress = await getCurriculumProgress(user.id);
     expect(progress[lesson.id]).toMatchObject({ completed: true, answered: all.length });
-  });
+  }, 120_000);
 
   it("keeps each learner's records separate", async () => {
     const a = await createLearner();
