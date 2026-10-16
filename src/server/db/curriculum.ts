@@ -323,12 +323,12 @@ export async function getCurriculumGraph(): Promise<{ lessons: GraphLesson[]; co
 }
 
 /** Independent and recall exercises from the given lessons, for mixed practice (browser-safe). */
-export async function getPracticePool(lessonIds: string[]): Promise<ClientExercise[]> {
+export async function getPracticePool(lessonIds: string[]): Promise<{ lessonId: string; exercise: ClientExercise }[]> {
   "use cache";
   if (lessonIds.length === 0) return [];
   const rows = await prisma.exercise.findMany({
     where: { lessonId: { in: lessonIds }, archivedAt: null, phase: { in: ["independent", "recall"] } },
     orderBy: [{ lessonId: "asc" }, { order: "asc" }],
   });
-  return rows.map(toClient);
+  return rows.map((row) => ({ lessonId: row.lessonId!, exercise: toClient(row) }));
 }
