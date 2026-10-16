@@ -1,10 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import { E2E_SCHEMA } from "./e2e/db";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
+  globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
   fullyParallel: true,
   // Locally the database is remote, so too many browsers at once just queue on it.
@@ -28,9 +30,11 @@ export default defineConfig({
   webServer: {
     command: `npm run start -- -p ${PORT}`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a server: one started elsewhere might point at the live schema.
+    reuseExistingServer: false,
     timeout: 120_000,
     // Auth rate limits would block the many quick sign-ups these tests make.
-    env: { AUTH_RATE_LIMIT: "off", BETTER_AUTH_URL: baseURL },
+    // The app under test uses the isolated browser-test schema, never the live one.
+    env: { AUTH_RATE_LIMIT: "off", BETTER_AUTH_URL: baseURL, DATABASE_SCHEMA: E2E_SCHEMA },
   },
 });

@@ -1,16 +1,12 @@
-import { config } from "dotenv";
 import { Client } from "pg";
+import { E2E_SCHEMA, e2eDatabaseUrl } from "./db";
 
-config({ path: ".env.local", quiet: true });
-
-/** Remove throwaway accounts created by the browser tests (cascades to all their records). */
+/** Remove throwaway accounts created by the browser tests — only in the browser-test schema. */
 export default async function globalTeardown() {
-  const url = process.env.DATABASE_URL;
-  if (!url) return;
-  const client = new Client({ connectionString: url });
+  const client = new Client({ connectionString: e2eDatabaseUrl() });
   await client.connect();
   try {
-    await client.query(`DELETE FROM public."user" WHERE email LIKE 'e2e+%@example.test'`);
+    await client.query(`DELETE FROM "${E2E_SCHEMA}"."user" WHERE email LIKE 'e2e+%@example.test'`);
   } finally {
     await client.end();
   }
