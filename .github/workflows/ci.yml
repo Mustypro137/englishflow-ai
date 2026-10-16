@@ -44,6 +44,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Use the same npm version as local development, so the lock file is read identically.
+      - run: npm install -g npm@11.6.1
+
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
