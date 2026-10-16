@@ -46,7 +46,10 @@ describe("concept progress", () => {
     p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-17" }, now);
     expect(p).toMatchObject({ reviewCorrectDays: 1, masteryState: "practicing" });
     p = applyReview(p, { correct: true, independent: true, dayKey: "2026-10-20" }, now);
-    expect(p).toMatchObject({ reviewCorrectDays: 2, masteryState: "mastered" });
+    expect(p).toMatchObject({ reviewCorrectDays: 2, masteryState: "mastered", masteredAt: now });
+    // Staying mastered keeps the original date.
+    const later = new Date(now.getTime() + 86_400_000);
+    expect(applyReview(p, { correct: true, independent: true, dayKey: "2026-10-27" }, later).masteredAt).toEqual(now);
   });
 
   it("does not count reviews answered with help", () => {

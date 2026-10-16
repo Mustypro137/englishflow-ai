@@ -26,19 +26,21 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
-  profile          Profile?
-  preferences      LearningPreferences?
-  attempts         ExerciseAttempt[]
-  conceptProgress  ConceptProgress[]
-  lessonProgress   LessonProgress[]
-  placementResults PlacementResult[]
-  savedWords       SavedWord[]
-  flashcards       Flashcard[]
-  reviewItems      ReviewItem[]
-  reviewLogs       ReviewLog[]
-  mistakes         MistakeRecord[]
-  notes            Note[]
-  bookmarks        Bookmark[]
+  profile              Profile?
+  preferences          LearningPreferences?
+  attempts             ExerciseAttempt[]
+  conceptProgress      ConceptProgress[]
+  lessonProgress       LessonProgress[]
+  placementResults     PlacementResult[]
+  savedWords           SavedWord[]
+  flashcards           Flashcard[]
+  reviewItems          ReviewItem[]
+  reviewLogs           ReviewLog[]
+  mistakes             MistakeRecord[]
+  notes                Note[]
+  bookmarks            Bookmark[]
+  studySessions        StudySession[]
+  challengeSubmissions ChallengeSubmission[]
 
   @@map("user")
 }
@@ -419,6 +421,7 @@ model ConceptProgress {
   /// Separate local days with a correct, independent delayed-review answer (reset by a lapse).
   reviewCorrectDays    Int          @default(0)
   lastReviewCorrectDay String?
+  masteredAt           DateTime?
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
 
@@ -642,4 +645,42 @@ model Bookmark {
 
   @@unique([userId, lessonId])
   @@map("bookmark")
+}
+
+// ---------------------------------------------------------------------------
+// Study sessions and challenges
+// ---------------------------------------------------------------------------
+
+model StudySession {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plannedMinutes  Int
+  /// The plan as shown to the learner: blocks with minutes, titles and links.
+  plan            Json
+  /// Ids of blocks the learner marked as done.
+  completedBlocks String[]
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([userId, startedAt])
+  @@map("study_session")
+}
+
+model ChallengeSubmission {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeSlug String
+  /// Local day ("YYYY-MM-DD") for daily challenges, the week's Monday for weekly ones.
+  periodKey     String
+  /// Learner's own writing, for writing challenges.
+  text          String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, challengeSlug, periodKey])
+  @@index([userId, completedAt])
+  @@map("challenge_submission")
 }

@@ -27,6 +27,7 @@ export async function saveProgress(tx: Tx, userId: string, conceptId: string, p:
     lastPracticedAt: p.lastPracticedAt,
     reviewCorrectDays: p.reviewCorrectDays,
     lastReviewCorrectDay: p.lastReviewCorrectDay,
+    masteredAt: p.masteredAt,
   };
   await tx.conceptProgress.upsert({
     where: { userId_conceptId: { userId, conceptId } },

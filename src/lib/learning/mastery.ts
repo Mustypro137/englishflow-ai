@@ -32,6 +32,8 @@ export interface ConceptProgressCounts {
   reviewCorrectDays: number;
   /** Local date ("YYYY-MM-DD") of the most recent such day. */
   lastReviewCorrectDay: string | null;
+  /** When the concept last became "mastered" (cleared if it lapses). */
+  masteredAt: Date | null;
 }
 
 export const EMPTY_PROGRESS: ConceptProgressCounts = {
@@ -45,6 +47,7 @@ export const EMPTY_PROGRESS: ConceptProgressCounts = {
   lastPracticedAt: null,
   reviewCorrectDays: 0,
   lastReviewCorrectDay: null,
+  masteredAt: null,
 };
 
 export function recentAccuracy(outcomes: readonly boolean[]): number {
@@ -112,13 +115,19 @@ export function applyReview(
   now: Date,
 ): ConceptProgressCounts {
   const next = withOutcome(prev, outcome, now);
+  let result: ConceptProgressCounts;
   if (!outcome.correct) {
     const lapsed = { ...next, reviewCorrectDays: 0 };
-    return { ...lapsed, masteryState: practiceState(lapsed) };
-  }
-  if (outcome.independent && outcome.dayKey !== prev.lastReviewCorrectDay) {
+    result = { ...lapsed, masteryState: practiceState(lapsed) };
+  } else if (outcome.independent && outcome.dayKey !== prev.lastReviewCorrectDay) {
     const counted = { ...next, reviewCorrectDays: prev.reviewCorrectDays + 1, lastReviewCorrectDay: outcome.dayKey };
-    return { ...counted, masteryState: stateFor(counted) };
+    result = { ...counted, masteryState: stateFor(counted) };
+  } else {
+    result = { ...next, masteryState: stateFor(next) };
   }
-  return { ...next, masteryState: stateFor(next) };
+  // Record when mastery is reached; clear it if mastery is lost.
+  if (result.masteryState === "mastered") {
+    return { ...result, masteredAt: prev.masteryState === "mastered" ? prev.masteredAt : now };
+  }
+  return { ...result, masteredAt: null };
 }
