@@ -53,9 +53,9 @@ Documented in `.env.example` (names and descriptions only, never real values). S
 | `AI_DAILY_TOKEN_BUDGET_PER_USER` | M6 | Per-user daily cap |
 | `AI_REQUESTS_PER_MINUTE_PER_USER` | M6 | Per-user rate cap |
 | `BLOB_READ_WRITE_TOKEN` (or R2 keys) | M7 | Object storage access |
-| `SENTRY_DSN` | M8 | Error monitoring |
+| `NEXT_PUBLIC_SENTRY_DSN` | M8 | Optional error monitoring (Sentry project DSN). Off when empty. Read at build time, so redeploy after setting it; the CSP then also allows the Sentry ingest host. |
 
-Never prefix a secret with `NEXT_PUBLIC_`. That exposes it to the browser.
+Never prefix a secret with `NEXT_PUBLIC_`. That exposes it to the browser. (A Sentry DSN isn't a secret: it only allows sending error reports.)
 
 ## 4. First deployment (step by step)
 

@@ -231,6 +231,20 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 
 **Completion criteria:** every item in the production-ready checklist is checked.
 
+**Acceptance checks → automated tests** (numbering as used by the milestones above; all run in CI):
+
+| # | Area | Covered by |
+|---|---|---|
+| 1 | Sign-up, sign-in, sign-out, persistence | `e2e/auth.spec.ts`, `tests/integration/learner-profile.test.ts` |
+| 2–5 | Lessons, exercises, feedback, progress, placement | `e2e/learn.spec.ts`, `tests/integration/learning.test.ts`, `tests/unit/grade-exercise.test.ts`, `mastery-placement.test.ts`, `content.test.ts` |
+| 6–8 | Reviews, vocabulary, notebook, mistakes | `e2e/review.spec.ts`, `tests/integration/reviews.test.ts`, `tests/unit/srs.test.ts` |
+| 9 | Dashboard from real data | `e2e/today.spec.ts`, `e2e/progress.spec.ts`, `tests/integration/activity.test.ts`, `tests/unit/analytics.test.ts` |
+| 10–11 | AI tutor setup state, AI reliability and limits | `e2e/tutor.spec.ts`, `tests/integration/ai.test.ts`, `tests/unit/ai.test.ts` |
+| 12 | One learner can't see or change another's data | `tests/integration/authorization.test.ts`, `tests/unit/authorization-sweep.test.ts`, `tests/integration/export.test.ts`, `e2e/auth.spec.ts` ("each learner sees only their own details") |
+| 13 | Mobile and desktop | every browser test runs on desktop (1280px) and phone (Pixel 7); the every-page sweep in `e2e/a11y.spec.ts` checks no page scrolls sideways |
+| 14 | Keyboard | `e2e/keyboard.spec.ts`, keyboard tests in `navigation`, `learn`, `public` and `review` specs |
+| 15 | Empty, loading and error states | every-page sweep in `e2e/a11y.spec.ts`, `e2e/states.spec.ts` (not found), empty-state tests in `today`, `progress` and `tutor` specs |
+
 ---
 
 ## Ongoing (every milestone)
