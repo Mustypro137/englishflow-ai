@@ -24,7 +24,8 @@ import { getCurriculumGraph, type GraphConcept } from "./curriculum";
  */
 
 const DAY = 86_400_000;
-const STUDY_CONTEXTS = ["lesson", "review", "practice"] as const;
+// Skill-lab answers count as study (activity, skills), never as lesson progress.
+const STUDY_CONTEXTS = ["lesson", "review", "practice", "skill_lab"] as const;
 
 /** Raw learner records, loaded once per request. */
 async function loadRecords(userId: string, now: Date) {

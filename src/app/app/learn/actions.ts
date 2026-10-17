@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { GradeResult } from "@/lib/learning/grading/grade-exercise";
 import { requireUser } from "@/server/auth/session";
 import { recordGeneratedAttempt } from "@/server/db/generated";
+import { recordLabAttempt } from "@/server/db/labs";
 import {
   InvalidResponseError,
   type LessonProgressSummary,
@@ -16,7 +17,7 @@ const attemptInput = z.object({
   response: z.unknown(),
   hintsUsed: z.number().int().min(0).max(10),
   revealedAnswer: z.boolean(),
-  context: z.enum(["lesson", "practice", "generated"]).default("lesson"),
+  context: z.enum(["lesson", "practice", "generated", "lab"]).default("lesson"),
 });
 
 export type AttemptActionResult =
@@ -31,6 +32,9 @@ export async function submitAttemptAction(input: z.input<typeof attemptInput>): 
     const { context, ...attempt } = parsed.data;
     if (context === "generated") {
       return { ok: true, result: await recordGeneratedAttempt(user.id, attempt), progress: null };
+    }
+    if (context === "lab") {
+      return { ok: true, result: await recordLabAttempt(user.id, attempt), progress: null };
     }
     const { result, progress } = await recordAttempt(user.id, { ...attempt, response: attempt.response }, context);
     return { ok: true, result, progress };

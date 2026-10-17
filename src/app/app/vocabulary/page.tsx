@@ -56,6 +56,12 @@ export default async function VocabularyPage() {
                 <span className="min-w-0">
                   <span className="text-ink font-medium">{w.headword}</span>
                   <span className="text-muted"> — {w.definition}</span>
+                  {w.sourceSentence ? (
+                    <span className="text-muted mt-0.5 block text-xs">
+                      From {w.sourceTitle ? `“${w.sourceTitle}”` : "your reading"}:{" "}
+                      <q className="text-ink">{w.sourceSentence}</q>
+                    </span>
+                  ) : null}
                 </span>
                 <span className="text-muted shrink-0">Next review: {w.dueLabel ?? "—"}</span>
               </li>

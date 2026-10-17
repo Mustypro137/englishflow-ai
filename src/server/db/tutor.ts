@@ -19,6 +19,7 @@ export interface ConversationSummary {
 
 export interface ConversationView extends ConversationSummary {
   lessonSlug: string | null;
+  scenarioSlug: string | null;
   messages: { id: string; role: "user" | "assistant"; content: string; createdAt: Date }[];
 }
 
@@ -45,6 +46,7 @@ export async function getConversation(userId: string, id: string): Promise<Conve
     title: c.title,
     updatedAt: c.updatedAt,
     lessonSlug: c.lessonSlug,
+    scenarioSlug: c.scenarioSlug,
     messages: c.messages,
   };
 }
@@ -56,11 +58,22 @@ export function conversationTitle(firstMessage: string): string {
 
 export async function createConversation(
   userId: string,
-  data: { mode: TutorModeName; firstMessage: string; lessonSlug: string | null },
+  data: {
+    mode: TutorModeName;
+    firstMessage: string;
+    lessonSlug: string | null;
+    scenario?: { slug: string; title: string } | null;
+  },
 ) {
   return prisma.tutorConversation.create({
-    data: { userId, mode: data.mode, title: conversationTitle(data.firstMessage), lessonSlug: data.lessonSlug },
-    select: { id: true, mode: true, title: true, lessonSlug: true },
+    data: {
+      userId,
+      mode: data.mode,
+      title: data.scenario ? `Role-play: ${data.scenario.title}` : conversationTitle(data.firstMessage),
+      lessonSlug: data.lessonSlug,
+      scenarioSlug: data.scenario?.slug ?? null,
+    },
+    select: { id: true, mode: true, title: true, lessonSlug: true, scenarioSlug: true },
   });
 }
 
@@ -147,4 +160,14 @@ export async function loadContextRecords(userId: string, lessonSlug: string | nu
     conceptStates: concepts.map((c) => c.masteryState),
     memories,
   };
+}
+
+/** The learner's role-play conversations for one scenario, newest first. */
+export async function listScenarioConversations(userId: string, scenarioSlug: string, limit = 10) {
+  return prisma.tutorConversation.findMany({
+    where: { userId, scenarioSlug },
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    select: { id: true, title: true, updatedAt: true, _count: { select: { messages: true } } },
+  });
 }

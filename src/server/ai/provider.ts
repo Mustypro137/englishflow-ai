@@ -1,6 +1,7 @@
 import "server-only";
 import { readAiConfig } from "./config";
 import { AnthropicProvider } from "./providers/anthropic";
+import { MockProvider } from "./providers/mock";
 import { NullProvider } from "./providers/null";
 import type { AiProvider } from "./types";
 
@@ -12,7 +13,12 @@ export function getAiProvider(): AiProvider {
   if (override) return override;
   if (!cached) {
     const config = readAiConfig();
-    cached = config.provider === "anthropic" ? new AnthropicProvider(config) : new NullProvider();
+    cached =
+      config.provider === "anthropic"
+        ? new AnthropicProvider(config)
+        : config.provider === "mock"
+          ? new MockProvider()
+          : new NullProvider();
   }
   return cached;
 }

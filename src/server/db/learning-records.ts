@@ -226,7 +226,8 @@ export async function submitPlacement(
     const rec = byId.get(a.exerciseId);
     if (!rec || rec.phase !== "placement" || !rec.placementSection || !rec.placementLevel) return [];
     const section = rec.placementSection;
-    if (section !== "grammar" && section !== "vocabulary" && section !== "reading") return [];
+    if (section !== "grammar" && section !== "vocabulary" && section !== "reading" && section !== "listening")
+      return [];
     const result: GradeResult =
       a.optionId === null
         ? { correct: false, score: 0, feedback: null, correctAnswer: "", explanation: rec.exercise.explanation }
@@ -238,7 +239,8 @@ export async function submitPlacement(
   const estimate = estimatePlacement(
     graded.map((g) => ({ section: g.section, level: g.level, correct: g.result.correct })),
   );
-  const level = (section: string) => estimate.sections.find((s) => s.section === section);
+  const level = (section: string) =>
+    section === "listening" ? estimate.listening : estimate.sections.find((s) => s.section === section);
   const sectionLevel = (section: string) => {
     const s = level(section);
     return s?.enoughEvidence ? s.level : null;
@@ -251,6 +253,7 @@ export async function submitPlacement(
         grammarLevel: sectionLevel("grammar"),
         vocabularyLevel: sectionLevel("vocabulary"),
         readingLevel: sectionLevel("reading"),
+        listeningLevel: sectionLevel("listening"),
         overallLevel: estimate.overall,
         scores: JSON.parse(JSON.stringify(estimate)) as Prisma.InputJsonValue,
       },

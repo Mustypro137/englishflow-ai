@@ -2,7 +2,8 @@
 
 import { ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ListenButton, PlaybackStatus, useAudioAvailability, useStopOnUnmount } from "@/components/audio/audio";
 import { ChoiceGroup } from "@/components/forms/choice-group";
 import { FormMessage } from "@/components/forms/field";
 import { useHydrated } from "@/components/forms/submit-button";
@@ -13,20 +14,37 @@ import type { PlacementEstimate, SectionEstimate } from "@/lib/learning/placemen
 import type { PlacementQuestion } from "@/server/db/curriculum";
 import { chooseLevelAction, submitPlacementAction } from "./actions";
 
-const SECTION_LABEL = { grammar: "Grammar", vocabulary: "Vocabulary", reading: "Reading" } as const;
+const SECTION_LABEL = {
+  grammar: "Grammar",
+  vocabulary: "Vocabulary",
+  reading: "Reading",
+  listening: "Listening",
+} as const;
+const MAX_PLAYS = 2;
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 type Level = (typeof LEVELS)[number];
 
 type Stage = "intro" | "questions" | "results";
 
 export function PlacementFlow({
-  questions,
+  questions: allQuestions,
   previous,
 }: {
   questions: PlacementQuestion[];
   previous: { level: string | null; date: string } | null;
 }) {
+  useStopOnUnmount();
   const hydrated = useHydrated();
+  const listeningTracks = useMemo(() => allQuestions.flatMap((q) => q.audio ?? []), [allQuestions]);
+  const audio = useAudioAvailability(listeningTracks);
+  const canListen = audio === "file" || audio === "device";
+  // The listening part is only offered when this device can actually play it.
+  const questions = useMemo(
+    () => (canListen ? allQuestions : allQuestions.filter((q) => q.section !== "listening")),
+    [allQuestions, canListen],
+  );
+  const hasListening = allQuestions.some((q) => q.section === "listening");
+  const [plays, setPlays] = useState(0);
   const [stage, setStage] = useState<Stage>("intro");
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -59,6 +77,7 @@ export function PlacementFlow({
     const all = [...answers, { exerciseId: question.exercise.id, optionId }];
     setAnswers(all);
     setSelected(null);
+    setPlays(0);
     if (index + 1 >= questions.length) finish(all);
     else setIndex(index + 1);
   }
@@ -68,6 +87,7 @@ export function PlacementFlow({
     let next = index;
     while (next < questions.length && questions[next].section === section) next++;
     setSelected(null);
+    setPlays(0);
     if (next >= questions.length) {
       if (answers.length === 0) {
         setError("Answer at least one section to get an estimate.");
@@ -82,17 +102,28 @@ export function PlacementFlow({
       <div className="space-y-6">
         <h1 className="text-ink text-2xl font-semibold tracking-tight sm:text-3xl">Placement check</h1>
         <p className="text-ink">
-          About 10 minutes. {questions.length} questions in three parts: grammar, vocabulary and reading. The questions
-          get harder as you go.
+          About 10 minutes. {questions.length} questions in {canListen ? "four" : "three"} parts: grammar, vocabulary,
+          reading{canListen ? " and listening" : ""}. The questions get harder as you go.
         </p>
+        {hasListening && audio === "none" ? (
+          <p className="text-muted text-sm">
+            The listening part is skipped because this device can&apos;t play audio. Your estimate uses the other parts.
+          </p>
+        ) : null}
+        {hasListening && audio === "device" ? (
+          <p className="text-muted text-sm">
+            The listening part uses your device&apos;s built-in computer voice. Listening is shown separately and
+            doesn&apos;t change your suggested starting level.
+          </p>
+        ) : null}
         <ul className="text-ink list-disc space-y-1 pl-6">
           <li>Answer on your own, without a dictionary — that makes the estimate useful.</li>
           <li>If you don&apos;t know an answer, choose &ldquo;I don&apos;t know&rdquo; rather than guessing.</li>
           <li>You can skip a whole part. You won&apos;t see right or wrong answers until the end.</li>
         </ul>
         <Alert tone="info" title="This gives an estimate, not a certificate">
-          A short check can&apos;t measure your exact level. Listening and speaking aren&apos;t included yet. You can
-          change your starting level afterwards or take the check again at any time.
+          A short check can&apos;t measure your exact level, and speaking isn&apos;t included. You can change your
+          starting level afterwards or take the check again at any time.
         </Alert>
         {previous ? (
           <p className="text-muted text-sm">
@@ -101,7 +132,7 @@ export function PlacementFlow({
           </p>
         ) : null}
         <div className="flex flex-wrap gap-3">
-          <Button size="lg" disabled={!hydrated} onClick={() => setStage("questions")}>
+          <Button size="lg" disabled={!hydrated || audio === "checking"} onClick={() => setStage("questions")}>
             Start the check <ArrowRight aria-hidden />
           </Button>
           <Link href="/app" className={buttonClasses({ variant: "secondary", size: "lg" })}>
@@ -141,6 +172,32 @@ export function PlacementFlow({
         <h1 ref={headingRef} tabIndex={-1} className="text-ink text-lg font-semibold focus:outline-none">
           {SECTION_LABEL[question.section]} — question {posInSection} of {sectionQuestions.length}
         </h1>
+
+        {question.audio ? (
+          <div className="border-border bg-surface space-y-2 rounded-md border p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {plays < MAX_PLAYS ? (
+                <ListenButton
+                  key={ex.id}
+                  id={`placement-${ex.id}`}
+                  tracks={question.audio}
+                  source={audio}
+                  label={plays === 0 ? "Listen" : "Listen again"}
+                  variant="primary"
+                  onStart={() => setPlays((n) => n + 1)}
+                />
+              ) : null}
+              <span className="text-muted text-sm" aria-live="polite">
+                {plays === 0
+                  ? "Listen, then answer. You can listen twice."
+                  : plays < MAX_PLAYS
+                    ? "You can listen once more."
+                    : "You've listened twice."}
+              </span>
+            </div>
+            <PlaybackStatus />
+          </div>
+        ) : null}
 
         {ex.passage ? (
           <div className="border-border bg-surface rounded-md border p-4">
@@ -243,13 +300,25 @@ function Results({
             </div>
           ))}
           <div>
-            <dt className="text-muted text-sm">Listening and speaking</dt>
-            <dd className="text-ink font-medium">Not assessed yet</dd>
+            <dt className="text-muted text-sm">Listening</dt>
+            <dd className="text-ink font-medium">
+              {estimate.listening ? describe(estimate.listening) : "Not assessed"}{" "}
+              {estimate.listening?.enoughEvidence ? (
+                <span className="text-muted text-sm font-normal">
+                  ({estimate.listening.correct} of {estimate.listening.answered} correct)
+                </span>
+              ) : null}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted text-sm">Speaking</dt>
+            <dd className="text-ink font-medium">Not assessed</dd>
           </div>
         </dl>
         <p className="text-muted mt-4 flex items-start gap-2 text-xs">
           <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          &ldquo;Or above&rdquo; means you answered everything at the highest level this check measures.
+          &ldquo;Or above&rdquo; means you answered everything at the highest level this check measures. Listening is
+          shown separately and doesn&apos;t change the suggested level.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { withoutDeviceSpeech } from "./audio-fixture";
 import { completeOnboarding, signUp } from "./helpers";
 
 const LESSON = "/app/learn/a1-subject-pronouns-and-be";
@@ -81,10 +82,13 @@ test("an incomplete answer is not sent", async ({ page }) => {
 });
 
 test("placement: answer, see an honest estimate, choose a level, and the home page reflects it", async ({ page }) => {
+  // Without device speech, the listening part is skipped (it needs audio).
+  await withoutDeviceSpeech(page);
   await newLearner(page);
   await page.goto("/app");
   await page.getByRole("link", { name: "Take the placement check" }).click();
   await expect(page.getByText("This gives an estimate, not a certificate")).toBeVisible();
+  await expect(page.getByText("The listening part is skipped because this device can't play audio.")).toBeVisible();
   await page.getByRole("button", { name: "Start the check" }).click();
 
   // Answer grammar and vocabulary with "I don't know", skip reading.
@@ -98,11 +102,12 @@ test("placement: answer, see an honest estimate, choose a level, and the home pa
   await expect(page.getByRole("heading", { level: 1, name: "Your estimated starting level" })).toBeVisible({
     timeout: 30_000,
   });
-  await expect(page.getByText("Listening and speaking")).toBeVisible();
-  await expect(page.getByText("Not assessed yet")).toBeVisible();
   const results = page.getByRole("main");
+  await expect(results.getByText("Speaking", { exact: true })).toBeVisible();
+  await expect(results.getByText("Listening", { exact: true })).toBeVisible();
   await expect(results.getByText("Start at A1").first()).toBeVisible();
-  await expect(results.getByText("Not assessed", { exact: true })).toBeVisible();
+  // Reading (skipped), listening (no audio) and speaking are all "not assessed".
+  await expect(results.getByText("Not assessed", { exact: true })).toHaveCount(3);
   await expect(page.getByRole("radio", { name: "A1 (suggested)" })).toBeChecked();
 
   await page.getByRole("radio", { name: "B1" }).check();

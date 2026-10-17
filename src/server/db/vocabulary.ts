@@ -57,6 +57,8 @@ export interface SavedWordView {
   topic: string;
   savedAt: Date;
   dueLabel: string | null;
+  sourceSentence: string | null;
+  sourceTitle: string | null;
 }
 
 export async function getSavedWords(userId: string, timeZone: string, now = new Date()): Promise<SavedWordView[]> {
@@ -73,6 +75,8 @@ export async function getSavedWords(userId: string, timeZone: string, now = new 
     topic: r.entry.topic,
     savedAt: r.createdAt,
     dueLabel: r.reviewItem ? describeDue(r.reviewItem.dueAt, now, timeZone) : null,
+    sourceSentence: r.sourceSentence,
+    sourceTitle: r.sourceTitle,
   }));
 }
 
@@ -81,8 +85,16 @@ export async function getSavedEntryIds(userId: string): Promise<Set<string>> {
   return new Set(rows.map((r) => r.vocabularyEntryId));
 }
 
-/** Save a word and schedule it (it can be reviewed straight away). Saving twice is harmless. */
-export async function saveWord(userId: string, entryId: string, now = new Date()): Promise<boolean> {
+/**
+ * Save a word and schedule it (it can be reviewed straight away). Saving twice is harmless.
+ * `source` keeps the sentence the word was met in (reading library); a later save updates it.
+ */
+export async function saveWord(
+  userId: string,
+  entryId: string,
+  now = new Date(),
+  source?: { sentence: string; title: string },
+): Promise<boolean> {
   const entry = await prisma.vocabularyEntry.findFirst({
     where: { id: entryId, archivedAt: null },
     select: { id: true },
@@ -91,8 +103,13 @@ export async function saveWord(userId: string, entryId: string, now = new Date()
   await prisma.$transaction(async (tx) => {
     const saved = await tx.savedWord.upsert({
       where: { userId_vocabularyEntryId: { userId, vocabularyEntryId: entryId } },
-      create: { userId, vocabularyEntryId: entryId },
-      update: {},
+      create: {
+        userId,
+        vocabularyEntryId: entryId,
+        sourceSentence: source?.sentence ?? null,
+        sourceTitle: source?.title ?? null,
+      },
+      update: source ? { sourceSentence: source.sentence, sourceTitle: source.title } : {},
     });
     const existing = await tx.reviewItem.findUnique({ where: { savedWordId: saved.id } });
     if (!existing) {
@@ -105,4 +122,66 @@ export async function saveWord(userId: string, entryId: string, now = new Date()
 /** Remove a saved word (and its review schedule). Only the learner's own words. */
 export async function removeSavedWord(userId: string, entryId: string): Promise<void> {
   await prisma.savedWord.deleteMany({ where: { userId, vocabularyEntryId: entryId } });
+}
+
+export type GlossarySaveResult = { saved: "word" | "flashcard" } | { saved: false };
+
+/**
+ * Save a glossary word from a reading text, with the sentence it appears in.
+ * Words with a vocabulary entry become saved words; others become a flashcard
+ * (once — saving again doesn't duplicate it). Both are scheduled for review.
+ */
+export async function saveGlossaryWord(
+  userId: string,
+  input: { word: string; definition: string; entrySlug: string | null; sentence: string; title: string },
+  now = new Date(),
+): Promise<GlossarySaveResult> {
+  if (input.entrySlug) {
+    const entry = await prisma.vocabularyEntry.findFirst({
+      where: { slug: input.entrySlug, archivedAt: null },
+      select: { id: true },
+    });
+    if (entry) {
+      await saveWord(userId, entry.id, now, { sentence: input.sentence, title: input.title });
+      return { saved: "word" };
+    }
+  }
+  const note = `From “${input.title}”: ${input.sentence}`;
+  const existing = await prisma.flashcard.findFirst({
+    where: { userId, front: input.word, back: input.definition },
+    select: { id: true },
+  });
+  if (existing) return { saved: "flashcard" };
+  await prisma.$transaction(async (tx) => {
+    const card = await tx.flashcard.create({
+      data: { userId, front: input.word, back: input.definition, note: note.slice(0, 500) },
+    });
+    await tx.reviewItem.create({ data: { userId, itemType: "flashcard", flashcardId: card.id, ...newCard(now) } });
+  });
+  return { saved: "flashcard" };
+}
+
+/** Which glossary words this learner has already saved (as words or flashcards). */
+export async function savedGlossaryWords(
+  userId: string,
+  glossary: readonly { word: string; definition: string; entry?: string }[],
+): Promise<Set<string>> {
+  const entrySlugs = glossary.flatMap((g) => (g.entry ? [g.entry] : []));
+  const [words, cards] = await Promise.all([
+    prisma.savedWord.findMany({
+      where: { userId, entry: { slug: { in: entrySlugs } } },
+      select: { entry: { select: { slug: true } } },
+    }),
+    prisma.flashcard.findMany({
+      where: { userId, front: { in: glossary.filter((g) => !g.entry).map((g) => g.word) } },
+      select: { front: true, back: true },
+    }),
+  ]);
+  const savedSlugs = new Set(words.map((w) => w.entry.slug));
+  const savedCards = new Set(cards.map((c) => `${c.front}|${c.back}`));
+  return new Set(
+    glossary
+      .filter((g) => (g.entry ? savedSlugs.has(g.entry) : savedCards.has(`${g.word}|${g.definition}`)))
+      .map((g) => g.word),
+  );
 }

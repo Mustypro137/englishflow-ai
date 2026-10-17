@@ -44,6 +44,8 @@ model User {
   tutorConversations   TutorConversation[]
   memories             LearnerMemory[]
   aiUsage              AiUsage[]
+  skillActivities      SkillActivity[]
+  writingDrafts        WritingDraft[]
 
   @@map("user")
 }
@@ -217,6 +219,8 @@ enum ExercisePhase {
   independent
   recall
   placement
+  /// Questions in the listening and reading labs (Milestone 7).
+  skill_lab
 }
 
 model Level {
@@ -380,6 +384,8 @@ enum AttemptContext {
   practice
   /// Answers to AI-generated exercises: recorded, but never used as evidence of mastery or level.
   generated
+  /// Listening and reading lab questions: recorded as skill practice, not grammar mastery.
+  skill_lab
 }
 
 enum MasteryState {
@@ -460,6 +466,7 @@ model PlacementResult {
   grammarLevel    CefrLevel?
   vocabularyLevel CefrLevel?
   readingLevel    CefrLevel?
+  listeningLevel  CefrLevel?
   overallLevel    CefrLevel?
   /// Per-section, per-level correct/total counts used for the estimate.
   scores          Json
@@ -506,6 +513,9 @@ model SavedWord {
   vocabularyEntryId String
   entry             VocabularyEntry @relation(fields: [vocabularyEntryId], references: [id])
   note              String?
+  /// Sentence the word was saved from (reading library), and where it came from.
+  sourceSentence    String?
+  sourceTitle       String?
   createdAt         DateTime        @default(now())
   reviewItem        ReviewItem?
 
@@ -719,16 +729,18 @@ enum TutorRole {
 }
 
 model TutorConversation {
-  id         String         @id @default(cuid())
-  userId     String
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mode       TutorMode
-  title      String
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode         TutorMode
+  title        String
   /// Lesson the conversation was started from, if any.
-  lessonSlug String?
-  messages   TutorMessage[]
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  lessonSlug   String?
+  /// Role-play scenario (conversation practice), if any.
+  scenarioSlug String?
+  messages     TutorMessage[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([userId, updatedAt])
   @@map("tutor_conversation")
@@ -794,4 +806,58 @@ model AiUsage {
 
   @@unique([userId, day])
   @@map("ai_usage")
+}
+
+// ---------------------------------------------------------------------------
+// Skill labs (Milestone 7)
+// ---------------------------------------------------------------------------
+
+/// One completed lab activity: a listening item, a reading text or a pronunciation set.
+model SkillActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill       Skill
+  itemSlug    String
+  /// "audio" when listened to, "text" when the transcript was used instead (no audio on the device).
+  mode        String
+  correct     Int
+  total       Int
+  /// Extra results, e.g. dictation accuracy or replays.
+  details     Json?
+  completedAt DateTime @default(now())
+
+  @@index([userId, completedAt])
+  @@index([userId, skill, itemSlug])
+  @@map("skill_activity")
+}
+
+enum WritingKind {
+  task
+  journal
+  sentence
+}
+
+/// A piece of the learner's writing. Rewrites point to the draft they improve.
+model WritingDraft {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       WritingKind
+  taskSlug   String?
+  title      String?
+  text       String
+  wordCount  Int
+  parentId   String?
+  parent     WritingDraft?  @relation("Rewrites", fields: [parentId], references: [id], onDelete: SetNull)
+  rewrites   WritingDraft[] @relation("Rewrites")
+  /// AI feedback (validated structure), if the learner asked for it.
+  feedback   Json?
+  feedbackAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([userId, taskSlug])
+  @@map("writing_draft")
 }

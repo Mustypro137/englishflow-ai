@@ -3,6 +3,7 @@
  * 30-minute template (5 review · 7 new · 7 targeted · 6 listening/reading ·
  * 5 apply) and adapting it to what the learner actually needs today. Pure function.
  */
+import type { SkillPick } from "@/lib/labs/pick";
 import { nextLesson, type Recommendation } from "./recommend/engine";
 import type { LearnerSnapshot } from "./snapshot";
 
@@ -11,7 +12,8 @@ export const MIN_SESSION = 5;
 export const MAX_SESSION = 120;
 const MIN_BLOCK = 2;
 
-export type BlockKind = "review" | "new_learning" | "targeted" | "vocabulary" | "apply";
+/** "vocabulary" only appears in plans saved before the listening and reading labs existed. */
+export type BlockKind = "review" | "new_learning" | "targeted" | "skills" | "vocabulary" | "apply";
 
 export interface PlanBlock {
   id: string;
@@ -29,11 +31,11 @@ export interface SessionPlan {
 }
 
 /** Base shares from the 30-minute template in the specification. */
-const TEMPLATE: Record<BlockKind, number> = {
+const TEMPLATE: Partial<Record<BlockKind, number>> = {
   review: 5,
   new_learning: 7,
   targeted: 7,
-  vocabulary: 6, // listening/reading time until those labs exist (Milestone 7)
+  skills: 6, // listening or reading
   apply: 5,
 };
 
@@ -61,7 +63,13 @@ export function clampSessionMinutes(m: number): number {
   return Math.min(MAX_SESSION, Math.max(MIN_SESSION, Math.round(m)));
 }
 
-export function buildSessionPlan(rawMinutes: number, s: LearnerSnapshot, recs: Recommendation[]): SessionPlan {
+export function buildSessionPlan(
+  rawMinutes: number,
+  s: LearnerSnapshot,
+  recs: Recommendation[],
+  /** Today's listening or reading activity; without one, the time goes to vocabulary. */
+  skillPick: SkillPick | null = null,
+): SessionPlan {
   const minutes = clampSessionMinutes(rawMinutes);
   const notes: string[] = [];
   const weights: Partial<Record<BlockKind, number>> = { ...TEMPLATE };
@@ -84,11 +92,10 @@ export function buildSessionPlan(rawMinutes: number, s: LearnerSnapshot, recs: R
   if (!targeted && !hasCompletedLesson) {
     weights.targeted = 0;
   }
-  notes.push("Listening and reading practice arrive later; vocabulary practice takes their place for now.");
 
   // Short sessions keep only the most valuable blocks.
   let alloc = allocate(minutes, weights);
-  const order: BlockKind[] = ["apply", "vocabulary", "targeted", "new_learning", "review"];
+  const order: BlockKind[] = ["apply", "skills", "targeted", "new_learning", "review"];
   while (Object.values(alloc).some((m) => (m ?? 0) > 0 && (m ?? 0) < MIN_BLOCK)) {
     const drop = order.find((k) => (alloc[k] ?? 0) > 0 && (alloc[k] ?? 0) < MIN_BLOCK);
     if (!drop) break;
@@ -119,12 +126,14 @@ export function buildSessionPlan(rawMinutes: number, s: LearnerSnapshot, recs: R
     targeted ? targeted.reason : "Practise topics you've already studied, mixed together.",
     targeted ? targeted.href : "/app/practice",
   );
-  add(
-    "vocabulary",
-    "Vocabulary",
-    s.savedWords > 0 ? "Review your saved words, then save a few new ones." : "Save five useful words from a topic.",
-    "/app/vocabulary",
-  );
+  if (skillPick) add("skills", skillPick.title, skillPick.description, skillPick.href);
+  else
+    add(
+      "skills",
+      "Vocabulary",
+      s.savedWords > 0 ? "Review your saved words, then save a few new ones." : "Save five useful words from a topic.",
+      "/app/vocabulary",
+    );
   add(
     "apply",
     "Use it",

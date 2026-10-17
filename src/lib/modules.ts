@@ -130,7 +130,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "listening",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "reading",
@@ -141,7 +141,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "reading",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "writing",
@@ -152,7 +152,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "writing",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "sentences",
@@ -162,7 +162,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "sentences",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "pronunciation",
@@ -173,18 +173,18 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "pronunciation",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "conversation",
     label: "Conversation",
     href: "/app/conversation",
     description:
-      "Real-life scenarios and role-plays — introductions, travel, workplace — in text, with optional voice.",
+      "Real-life scenarios and role-plays — cafés, travel, work — in text, with replies read aloud if you like.",
     icon: "conversation",
     group: "skills",
     milestone: 7,
-    status: "planned",
+    status: "available",
   },
   {
     id: "tutor",

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState, useTransition } from "react";
 import { suggestMemoriesAction } from "@/app/app/tutor/actions";
+import { audioController } from "@/components/audio/audio-controller";
+import { useAudioAvailability } from "@/components/audio/audio";
 import { useHydrated } from "@/components/forms/submit-button";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -25,16 +27,36 @@ type ServerEvent =
 
 const MAX_LENGTH = 4000;
 
+export interface ChatScenario {
+  slug: string;
+  partnerName: string;
+  partnerVoice: "female" | "male";
+  opening: string;
+}
+
+const NO_FILES = [{ key: "probe", text: "", voice: "female" as const, url: null }];
+
+/** Plain text for reading a reply aloud: no Markdown symbols. */
+function speakable(text: string): string {
+  return text
+    .replace(/[*_`#>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function TutorChat({
   conversation,
   initialMode,
   defaultStyle,
   lesson,
+  scenario = null,
 }: {
   conversation: { id: string; mode: TutorModeName; messages: ChatMessage[] } | null;
   initialMode: TutorModeName;
   defaultStyle: "concise" | "detailed";
   lesson: { slug: string; title: string } | null;
+  /** Role-play: the mode is fixed and the partner's opening line is shown first. */
+  scenario?: ChatScenario | null;
 }) {
   const ids = useId();
   const hydrated = useHydrated();
@@ -50,6 +72,9 @@ export function TutorChat({
   const [suggesting, startSuggesting] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
   const busy = streaming !== null;
+  const voice = useAudioAvailability(NO_FILES);
+  const [readAloud, setReadAloud] = useState(false);
+  useEffect(() => () => audioController().stop(), []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "nearest" });
@@ -75,6 +100,7 @@ export function TutorChat({
           message: text,
           style,
           lessonSlug: conversationId ? null : (lesson?.slug ?? null),
+          scenarioSlug: conversationId ? null : (scenario?.slug ?? null),
         }),
       });
     } catch {
@@ -120,6 +146,20 @@ export function TutorChat({
             failed = event.message;
           } else if (event.type === "done") {
             setMessages((m) => [...m, { id: event.messageId, role: "assistant", content: reply }]);
+            if (readAloud && voice === "device") {
+              void audioController().play(
+                `reply-${event.messageId}`,
+                [
+                  {
+                    key: event.messageId,
+                    text: speakable(reply),
+                    voice: scenario?.partnerVoice ?? "female",
+                    url: null,
+                  },
+                ],
+                "device",
+              );
+            }
           }
         }
       }
@@ -158,7 +198,7 @@ export function TutorChat({
 
   return (
     <div className="space-y-5">
-      {conversation ? (
+      {scenario ? null : conversation ? (
         <p className="text-muted text-sm">
           Mode: <span className="text-ink font-medium">{info.label}</span>
         </p>
@@ -192,11 +232,29 @@ export function TutorChat({
         </div>
       )}
 
+      {scenario && voice === "device" ? (
+        <label className="text-ink flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={readAloud}
+            onChange={(e) => {
+              setReadAloud(e.target.checked);
+              if (!e.target.checked) audioController().stop();
+            }}
+            className="accent-primary size-4"
+          />
+          Read {scenario.partnerName}&apos;s replies aloud (your device&apos;s computer voice)
+        </label>
+      ) : null}
+
       <ol aria-label="Conversation" className="space-y-4">
+        {scenario ? <Message role="assistant" content={scenario.opening} name={scenario.partnerName} /> : null}
         {messages.map((m) => (
-          <Message key={m.id} role={m.role} content={m.content} />
+          <Message key={m.id} role={m.role} content={m.content} name={scenario ? scenario.partnerName : undefined} />
         ))}
-        {streaming !== null ? <Message role="assistant" content={streaming || "…"} live /> : null}
+        {streaming !== null ? (
+          <Message role="assistant" content={streaming || "…"} live name={scenario?.partnerName} />
+        ) : null}
       </ol>
       <div ref={endRef} />
       <p role="status" className="sr-only">
@@ -219,7 +277,7 @@ export function TutorChat({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder={info.placeholder}
+            placeholder={scenario ? `Reply to ${scenario.partnerName}…` : info.placeholder}
             maxLength={MAX_LENGTH}
             rows={4}
             aria-describedby={`${ids}-msg-hint`}
@@ -268,7 +326,18 @@ export function TutorChat({
   );
 }
 
-function Message({ role, content, live = false }: { role: "user" | "assistant"; content: string; live?: boolean }) {
+function Message({
+  role,
+  content,
+  live = false,
+  name,
+}: {
+  role: "user" | "assistant";
+  content: string;
+  live?: boolean;
+  /** Who the assistant is playing, in role-play. */
+  name?: string;
+}) {
   return (
     <li
       className={cn(
@@ -278,7 +347,7 @@ function Message({ role, content, live = false }: { role: "user" | "assistant"; 
       aria-busy={live || undefined}
     >
       <p className="text-muted mb-1.5 text-xs font-semibold tracking-wide uppercase">
-        {role === "user" ? "You" : "Tutor"}
+        {role === "user" ? "You" : (name ?? "Tutor")}
       </p>
       {role === "user" ? <p className="whitespace-pre-wrap">{content}</p> : <TutorMarkdown text={content} />}
     </li>

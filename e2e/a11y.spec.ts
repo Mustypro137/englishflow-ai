@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import { withoutDeviceSpeech } from "./audio-fixture";
 import { completeOnboarding, signUp } from "./helpers";
 import { APP_ROUTES, PUBLIC_ROUTES } from "./routes";
 
@@ -40,6 +41,7 @@ test("no serious accessibility violations on lesson feedback and placement resul
   await first.getByRole("button", { name: "Show the answer" }).click();
   expect(await seriousViolations(page), "lesson feedback").toEqual([]);
 
+  await withoutDeviceSpeech(page);
   await page.goto("/app/placement");
   await page.getByRole("button", { name: "Start the check" }).click();
   expect(await seriousViolations(page), "placement question").toEqual([]);

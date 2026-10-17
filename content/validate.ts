@@ -2,7 +2,17 @@
  * Validate all curriculum content: each file against its schema, plus checks that
  * need the whole curriculum (unique slugs, prerequisites that exist and have no cycles).
  */
-import { curriculum, placementItems, vocabulary as vocabularySets } from "./index";
+import { z } from "zod";
+import { curriculum, labs as rawLabs, placementItems, vocabulary as vocabularySets } from "./index";
+import {
+  expansionTaskSchema,
+  listeningItemSchema,
+  originalSentencePromptSchema,
+  pronunciationSchema,
+  readingTextSchema,
+  scenarioSchema,
+  writingTaskSchema,
+} from "./labs/schemas";
 import {
   levelSchema,
   placementItemSchema,
@@ -12,10 +22,30 @@ import {
   vocabularySetSchema,
 } from "./schemas";
 
+const labsSchema = z.object({
+  listeningItems: z.array(listeningItemSchema),
+  readingTexts: z.array(readingTextSchema),
+  writingTasks: z.array(writingTaskSchema),
+  pronunciation: pronunciationSchema,
+  scenarios: z.array(scenarioSchema),
+  expansionTasks: z.array(expansionTaskSchema),
+  originalSentencePrompts: z.array(originalSentencePromptSchema),
+});
+export type ValidatedLabs = z.output<typeof labsSchema>;
+
 export interface ValidatedContent {
   levels: ParsedLevel[];
   placement: PlacementItem[];
   vocabulary: VocabularySet[];
+  labs: ValidatedLabs;
+}
+
+/** Skill-lab questions, which are stored as exercises like lesson practice. */
+export function labExercises(labs: ValidatedLabs) {
+  return [
+    ...labs.listeningItems.flatMap((i) => i.questions),
+    ...labs.readingTexts.flatMap((t) => t.questions.map((q) => q.exercise)),
+  ];
 }
 
 export class ContentError extends Error {
@@ -28,6 +58,7 @@ export function validateContent(
   rawLevels: unknown[] = curriculum,
   rawPlacement: unknown[] = placementItems,
   rawVocabulary: unknown[] = vocabularySets,
+  rawLabsInput: unknown = rawLabs,
 ): ValidatedContent {
   const problems: string[] = [];
   const levels: ParsedLevel[] = [];
@@ -49,7 +80,11 @@ export function validateContent(
     else
       for (const issue of r.error.issues) problems.push(`vocabulary[${i}] ${issue.path.join(".")}: ${issue.message}`);
   }
-  if (problems.length) throw new ContentError(problems);
+  const parsedLabs = labsSchema.safeParse({ ...(rawLabsInput as object) });
+  if (!parsedLabs.success)
+    for (const issue of parsedLabs.error.issues) problems.push(`labs ${issue.path.join(".")}: ${issue.message}`);
+  if (problems.length || !parsedLabs.success) throw new ContentError(problems);
+  const labs = parsedLabs.data;
 
   const dupes = (label: string, values: string[]) => {
     const seen = new Set<string>();
@@ -66,6 +101,7 @@ export function validateContent(
   const exercises = [
     ...lessons.flatMap((l) => (l.status === "published" ? [...l.guided, ...l.independent, ...l.recall] : [])),
     ...placement.map((p) => p.exercise),
+    ...labExercises(labs),
   ];
 
   dupes(
@@ -110,6 +146,39 @@ export function validateContent(
     for (const s of e.concepts) if (!conceptSlugs.has(s)) problems.push(`Exercise ${e.slug}: unknown concept ${s}`);
   }
 
+  // Skill labs
+  dupes(
+    "listening item",
+    labs.listeningItems.map((i) => i.slug),
+  );
+  dupes(
+    "reading text",
+    labs.readingTexts.map((t) => t.slug),
+  );
+  dupes(
+    "writing task",
+    labs.writingTasks.map((t) => t.slug),
+  );
+  dupes(
+    "scenario",
+    labs.scenarios.map((s) => s.slug),
+  );
+  dupes(
+    "sentence studio task",
+    [...labs.expansionTasks, ...labs.originalSentencePrompts].map((t) => t.slug),
+  );
+  const vocabSlugs = new Set(vocabulary.flatMap((v) => v.entries.map((e) => e.slug)));
+  for (const t of labs.readingTexts) {
+    for (const g of t.glossary)
+      if (g.entry && !vocabSlugs.has(g.entry)) problems.push(`Reading ${t.slug}: unknown vocabulary entry ${g.entry}`);
+  }
+  for (const t of labs.writingTasks) {
+    for (const c of t.concepts) if (!conceptSlugs.has(c)) problems.push(`Writing task ${t.slug}: unknown concept ${c}`);
+  }
+  for (const p of labs.originalSentencePrompts) {
+    if (!conceptSlugs.has(p.concept)) problems.push(`Sentence prompt ${p.slug}: unknown concept ${p.concept}`);
+  }
+
   // Prerequisite cycles (depth-first search).
   const graph = new Map(concepts.map((c) => [c.slug, c.prerequisites]));
   const state = new Map<string, "visiting" | "done">();
@@ -126,5 +195,5 @@ export function validateContent(
   for (const slug of graph.keys()) visit(slug, []);
 
   if (problems.length) throw new ContentError(problems);
-  return { levels, placement, vocabulary };
+  return { levels, placement, vocabulary, labs };
 }

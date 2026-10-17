@@ -1,4 +1,5 @@
 import "server-only";
+import type { Scenario } from "@content/labs/schemas";
 import { TUTOR_MODE_INFO, type TutorModeName } from "@/lib/ai/modes";
 import { formatContext, type TutorContext } from "./context";
 import type { ChatTurn } from "./types";
@@ -39,14 +40,30 @@ export function tutorDynamicPrompt(opts: {
   style: keyof typeof STYLE_RULES;
   hintMode: keyof typeof HINT_RULES;
   context: TutorContext;
+  scenario?: Scenario | null;
 }): string {
   return [
     `Mode: ${TUTOR_MODE_INFO[opts.mode].label}. ${TUTOR_MODE_INFO[opts.mode].instruction}`,
+    ...(opts.scenario ? [scenarioPrompt(opts.scenario)] : []),
     STYLE_RULES[opts.style],
     HINT_RULES[opts.hintMode],
     "<learning_context>",
     formatContext(opts.context),
     "</learning_context>",
+  ].join("\n");
+}
+
+/** Role-play instructions for a conversation scenario. */
+export function scenarioPrompt(s: Scenario): string {
+  return [
+    "<role_play>",
+    `You are playing ${s.partnerRole}, called ${s.partnerName}. Setting: ${s.setting}`,
+    `The learner is ${s.learnerRole}. Their goals: ${s.goals.join("; ")}.`,
+    `You already opened the conversation with: "${s.opening}"`,
+    "Stay in role and reply naturally in one to three short sentences, at the learner's level, so they can answer.",
+    'If the learner makes a mistake that matters, end your reply with one short line starting with "Tip:" giving the correct form. Ignore small slips.',
+    "When the goals are done, or if the learner asks to stop, step out of the role and give brief feedback: what went well and one or two things to practise.",
+    "</role_play>",
   ].join("\n");
 }
 

@@ -11,7 +11,7 @@
  * Deliberately free of "server-only" so the seed script and tests can import it.
  */
 import type { ExerciseContent } from "@content/schemas";
-import type { ValidatedContent } from "@content/validate";
+import { labExercises, type ValidatedContent } from "@content/validate";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 export interface SeedSummary {
@@ -23,6 +23,7 @@ export interface SeedSummary {
   publishedLessons: number;
   exercises: number;
   placementItems: number;
+  labQuestions: number;
   vocabularyEntries: number;
   archived: number;
 }
@@ -48,9 +49,9 @@ async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) 
 interface ExerciseRow {
   e: ExerciseContent;
   lessonSlug: string | null;
-  phase: "guided" | "independent" | "recall" | "placement";
+  phase: "guided" | "independent" | "recall" | "placement" | "skill_lab";
   order: number;
-  placementSection?: "grammar" | "vocabulary" | "reading";
+  placementSection?: "grammar" | "vocabulary" | "reading" | "listening";
   placementLevel?: Cefr;
 }
 
@@ -137,6 +138,12 @@ export async function seedCurriculum(prisma: PrismaClient, content: ValidatedCon
       placementSection: p.section,
       placementLevel: p.level,
     })),
+    ...labExercises(content.labs).map((e, order) => ({
+      e,
+      phase: "skill_lab" as const,
+      order,
+      lessonSlug: null,
+    })),
   ];
   const exerciseRows = await mapLimit(exercises, CONCURRENCY, (x) => {
     const data = {
@@ -218,8 +225,9 @@ export async function seedCurriculum(prisma: PrismaClient, content: ValidatedCon
     units: unitIds.size,
     lessons: lessonIds.size,
     publishedLessons: lessons.filter(({ l }) => l.status === "published").length,
-    exercises: exercises.length - content.placement.length,
+    exercises: exercises.filter((x) => x.lessonSlug !== null).length,
     placementItems: content.placement.length,
+    labQuestions: labExercises(content.labs).length,
     vocabularyEntries: vocab.length,
     archived: archived.reduce((sum, r) => sum + r.count, 0),
   };

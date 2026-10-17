@@ -52,6 +52,12 @@ export default async function NotebookPage() {
         <Link href="/app/mistakes" className="border-border bg-surface hover:bg-sunken rounded-md border px-3 py-1.5">
           Mistakes
         </Link>
+        <Link
+          href="/app/writing/journal"
+          className="border-border bg-surface hover:bg-sunken rounded-md border px-3 py-1.5"
+        >
+          Writing journal
+        </Link>
       </nav>
 
       <Section

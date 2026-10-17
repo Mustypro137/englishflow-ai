@@ -5,10 +5,15 @@
  * at least half its items are correct AND accuracy on all items up to that level
  * is at least 70%. The estimate is the last level passed before the first failure.
  * This is an approximate starting point, not a certified level.
+ *
+ * Listening is estimated the same way but reported separately: it only measures up
+ * to B1 and needs audio on the device, so it never changes the suggested starting level.
  */
 import { CEFR_CODES, type Cefr } from "@content/schemas";
 
-export type PlacementSection = "grammar" | "vocabulary" | "reading";
+export type PlacementSection = "grammar" | "vocabulary" | "reading" | "listening";
+/** Sections that decide the overall starting level. */
+export const LEVEL_SECTIONS = ["grammar", "vocabulary", "reading"] as const;
 
 export const PLACEMENT_RULES = {
   levelMinAccuracy: 0.5,
@@ -36,6 +41,8 @@ export interface SectionEstimate {
 
 export interface PlacementEstimate {
   sections: SectionEstimate[];
+  /** Listening, when it was assessed (reported separately). */
+  listening: SectionEstimate | null;
   /** Overall starting level suggestion; null means start at A1 (or not enough evidence). */
   overall: Cefr | null;
   enoughEvidence: boolean;
@@ -78,11 +85,12 @@ export function estimateSection(section: PlacementSection, answers: readonly Pla
 
 /** Lower median of the section levels (start-at-A1 counts as the lowest value). */
 export function estimatePlacement(answers: readonly PlacementAnswer[]): PlacementEstimate {
-  const sections = (["grammar", "vocabulary", "reading"] as const).map((s) => estimateSection(s, answers));
+  const sections = LEVEL_SECTIONS.map((s) => estimateSection(s, answers));
+  const listening = answers.some((a) => a.section === "listening") ? estimateSection("listening", answers) : null;
   const usable = sections.filter((s) => s.enoughEvidence);
-  if (usable.length === 0) return { sections, overall: null, enoughEvidence: false };
+  if (usable.length === 0) return { sections, listening, overall: null, enoughEvidence: false };
 
   const indices = usable.map((s) => (s.level ? CEFR_CODES.indexOf(s.level) : -1)).sort((a, b) => a - b);
   const median = indices[Math.floor((indices.length - 1) / 2)];
-  return { sections, overall: median >= 0 ? CEFR_CODES[median] : null, enoughEvidence: true };
+  return { sections, listening, overall: median >= 0 ? CEFR_CODES[median] : null, enoughEvidence: true };
 }

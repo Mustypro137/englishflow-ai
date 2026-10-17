@@ -10,7 +10,10 @@ import {
 } from "@content/schemas";
 import { z } from "zod";
 import type { Exercise } from "@/generated/prisma/client";
+import { placementClips } from "@/lib/audio/clips";
+import type { AudioTrack } from "@/lib/audio/track";
 import { type ClientExercise, toClientExercise } from "@/lib/learning/client-exercise";
+import { toTracks } from "@/server/audio/manifest";
 import { prisma } from "./client";
 
 /*
@@ -146,7 +149,7 @@ export async function getLessonBySlug(slug: string): Promise<LessonView | null> 
 
   const exercises: Record<LessonPhase, ClientExercise[]> = { guided: [], independent: [], recall: [] };
   for (const row of lesson.exercises) {
-    if (row.phase === "placement") continue;
+    if (row.phase === "placement" || row.phase === "skill_lab") continue;
     exercises[row.phase].push(toClient(row));
   }
 
@@ -202,26 +205,42 @@ export async function getLessonExerciseIds(lessonId: string): Promise<string[]> 
   return rows.map((r) => r.id);
 }
 
+export type PlacementSectionName = "grammar" | "vocabulary" | "reading" | "listening";
+
 export interface PlacementQuestion {
-  section: "grammar" | "vocabulary" | "reading";
+  section: PlacementSectionName;
   exercise: ClientExercise;
+  /** Listening items: what to play before answering. */
+  audio: AudioTrack[] | null;
 }
 
-/** Placement questions in order (grammar, vocabulary, reading). Levels are not sent to the browser. */
+/**
+ * Placement questions in order (grammar, vocabulary, reading, listening).
+ * Levels are not sent to the browser. Listening audio has to be (it's spoken by the
+ * device or played from a file), so a determined learner could read it — it's a self-check.
+ */
 export async function getPlacementQuestions(): Promise<PlacementQuestion[]> {
   "use cache";
   const rows = await prisma.exercise.findMany({
     where: { phase: "placement", archivedAt: null },
     orderBy: { order: "asc" },
   });
-  const sectionOrder = { grammar: 0, vocabulary: 1, reading: 2 } as const;
+  const sectionOrder = { grammar: 0, vocabulary: 1, reading: 2, listening: 3 } as const;
   return rows
     .filter(
-      (r): r is Exercise & { placementSection: "grammar" | "vocabulary" | "reading" } =>
-        r.placementSection === "grammar" || r.placementSection === "vocabulary" || r.placementSection === "reading",
+      (r): r is Exercise & { placementSection: PlacementSectionName } =>
+        r.placementSection !== null && r.placementSection in sectionOrder,
     )
     .sort((a, b) => sectionOrder[a.placementSection] - sectionOrder[b.placementSection] || a.order - b.order)
-    .map((r) => ({ section: r.placementSection, exercise: toClient(r) }));
+    .map((r) => {
+      const exercise = parseStoredExercise(r);
+      const listen = exercise.type === "multiple_choice" ? exercise.payload.listen : undefined;
+      return {
+        section: r.placementSection,
+        exercise: toClient(r),
+        audio: listen ? toTracks(placementClips(r.slug, listen)) : null,
+      };
+    });
 }
 
 export interface GraphLesson {

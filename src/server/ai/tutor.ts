@@ -1,6 +1,7 @@
 import "server-only";
 import { AiError, type AiErrorKind } from "@/lib/ai/errors";
 import type { TutorModeName } from "@/lib/ai/modes";
+import { findScenario } from "@/lib/labs/content";
 import { prisma } from "@/server/db/client";
 import { createConversation, loadContextRecords } from "@/server/db/tutor";
 import { selectContext } from "./context";
@@ -17,6 +18,8 @@ export interface TutorTurnInput {
   message: string;
   style: "concise" | "detailed";
   lessonSlug: string | null;
+  /** Role-play scenario for a new conversation (conversation practice). */
+  scenarioSlug?: string | null;
 }
 
 export type TutorEvent =
@@ -43,16 +46,24 @@ export async function startTutorTurn(
   const existing = input.conversationId
     ? await prisma.tutorConversation.findFirst({
         where: { id: input.conversationId, userId },
-        select: { id: true, mode: true, title: true, lessonSlug: true },
+        select: { id: true, mode: true, title: true, lessonSlug: true, scenarioSlug: true },
       })
     : null;
   if (input.conversationId && !existing) throw new AiError("bad_request", "conversation not found");
+  const requestedScenario = !existing && input.scenarioSlug ? findScenario(input.scenarioSlug) : null;
+  if (!existing && input.scenarioSlug && !requestedScenario) throw new AiError("bad_request", "unknown scenario");
 
   await reserveAiRequest(userId);
 
   const conversation =
     existing ??
-    (await createConversation(userId, { mode: input.mode, firstMessage: message, lessonSlug: input.lessonSlug }));
+    (await createConversation(userId, {
+      mode: requestedScenario ? "conversation" : input.mode,
+      firstMessage: message,
+      lessonSlug: input.lessonSlug,
+      scenario: requestedScenario,
+    }));
+  const scenario = conversation.scenarioSlug ? findScenario(conversation.scenarioSlug) : null;
   const [prefs, previous] = await Promise.all([
     prisma.learningPreferences.findUnique({ where: { userId }, select: { tutorHintMode: true } }),
     prisma.tutorMessage.findMany({
@@ -80,6 +91,7 @@ export async function startTutorTurn(
           style: input.style,
           hintMode: prefs?.tutorHintMode ?? "hint_first",
           context,
+          scenario,
         }),
         messages: turns,
         maxTokens: MAX_REPLY_TOKENS[input.style],

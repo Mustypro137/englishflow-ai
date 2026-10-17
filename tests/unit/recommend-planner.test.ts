@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { pickSkillActivity } from "@/lib/labs/pick";
 import { buildSessionPlan, allocate, clampSessionMinutes } from "@/lib/learning/planner";
 import { nextLesson, recommend } from "@/lib/learning/recommend/engine";
 import type { LearnerSnapshot, SnapshotLesson } from "@/lib/learning/snapshot";
@@ -106,7 +107,7 @@ describe("recommendation engine", () => {
     const skill = recs.find((r) => r.kind === "skill")!;
     expect(skill).toMatchObject({ title: "Save five new words", href: "/app/vocabulary" });
     expect(
-      recommend(snapshot({ goals: ["travel"], recentPracticeBySkill: { vocabulary: 20 } })).some(
+      recommend(snapshot({ goals: ["travel"], recentPracticeBySkill: { vocabulary: 20, listening: 20 } })).some(
         (r) => r.kind === "skill",
       ),
     ).toBe(false);
@@ -159,9 +160,24 @@ describe("study planner", () => {
       ["review", 5],
       ["new_learning", 7],
       ["targeted", 7],
-      ["vocabulary", 6],
+      ["skills", 6],
       ["apply", 5],
     ]);
+  });
+
+  it("uses the listening or reading pick for the skills block, or vocabulary without one", () => {
+    const s = snapshot({ reviewsDue: 5, lessons: [lesson(1, { completed: true, completedAt: now }), lesson(2)] });
+    const pick = {
+      skill: "listening" as const,
+      slug: "a1-at-the-cafe",
+      title: "Listening: At the café",
+      description: "Listen, answer the questions, then check the transcript.",
+      href: "/app/listening/a1-at-the-cafe",
+    };
+    const withPick = buildSessionPlan(30, s, recommend(s), pick).blocks.find((b) => b.kind === "skills")!;
+    expect(withPick).toMatchObject({ title: "Listening: At the café", href: "/app/listening/a1-at-the-cafe" });
+    const without = buildSessionPlan(30, s, recommend(s)).blocks.find((b) => b.kind === "skills")!;
+    expect(without).toMatchObject({ title: "Vocabulary", href: "/app/vocabulary" });
   });
 
   it("gives review time to new learning when nothing is due", () => {
@@ -193,11 +209,57 @@ describe("study planner", () => {
     const s = snapshot();
     expect(buildSessionPlan(45, s, recommend(s)).blocks.reduce((a, b) => a + b.minutes, 0)).toBe(45);
   });
+});
 
-  it("is honest that listening and reading aren't available yet", () => {
-    const s = snapshot();
-    expect(buildSessionPlan(30, s, recommend(s)).notes.join(" ")).toMatch(
-      /Listening and reading practice arrive later/,
-    );
+describe("listening and reading in recommendations and plans", () => {
+  it("recommends listening for a travel goal once vocabulary is well practised", () => {
+    const recs = recommend(snapshot({ goals: ["travel"], recentPracticeBySkill: { vocabulary: 20 } }));
+    expect(recs.find((r) => r.kind === "skill")).toMatchObject({ href: "/app/listening" });
+    expect(
+      recommend(snapshot({ goals: ["travel"], recentPracticeBySkill: { vocabulary: 20, listening: 9 } })).some(
+        (r) => r.kind === "skill",
+      ),
+    ).toBe(false);
+  });
+
+  const items = [
+    { slug: "one", title: "One", minutes: 5 },
+    { slug: "two", title: "Two", minutes: 5 },
+  ];
+  const empty = new Map<string, Date>();
+
+  it("picks the skill practised less this week, listening on a tie", () => {
+    const base = { listening: items, reading: items, lastDone: { listening: empty, reading: empty } };
+    expect(pickSkillActivity({ ...base, doneThisWeek: { listening: 0, reading: 0 } })?.skill).toBe("listening");
+    expect(pickSkillActivity({ ...base, doneThisWeek: { listening: 3, reading: 1 } })).toMatchObject({
+      skill: "reading",
+      href: "/app/reading/one",
+    });
+  });
+
+  it("picks the first item not done yet, then the one done longest ago", () => {
+    const doneOne = new Map([["one", new Date("2026-10-10")]]);
+    const base = { reading: [], doneThisWeek: { listening: 0, reading: 0 } };
+    expect(
+      pickSkillActivity({ ...base, listening: items, lastDone: { listening: doneOne, reading: empty } })?.slug,
+    ).toBe("two");
+    const both = new Map([
+      ["one", new Date("2026-10-12")],
+      ["two", new Date("2026-10-05")],
+    ]);
+    const again = pickSkillActivity({ ...base, listening: items, lastDone: { listening: both, reading: empty } });
+    expect(again).toMatchObject({ slug: "two", title: "Listening: Two" });
+    expect(again?.description).toMatch(/^Listen again/);
+  });
+
+  it("returns nothing when there are no items", () => {
+    expect(
+      pickSkillActivity({
+        listening: [],
+        reading: [],
+        lastDone: { listening: empty, reading: empty },
+        doneThisWeek: { listening: 0, reading: 0 },
+      }),
+    ).toBeNull();
   });
 });

@@ -160,6 +160,21 @@ export const ruleUnderPractisedSkills: Rule = (s) => {
       ];
     }
   }
+  for (const skill of ["listening", "reading"] as const) {
+    if (!goalSkills.has(skill)) continue;
+    if ((s.recentPracticeBySkill[skill] ?? 0) < RECOMMENDATION_RULES_CONFIG.underPractisedThreshold) {
+      return [
+        {
+          kind: "skill",
+          title: skill === "listening" ? "Listening practice" : "Reading practice",
+          href: `/app/${skill}`,
+          reason: `${skill === "listening" ? "Listening" : "Reading"} matters for your goals, and you've practised it little in the last two weeks.`,
+          minutes: 7,
+          priority: 70,
+        },
+      ];
+    }
+  }
   return [];
 };
 

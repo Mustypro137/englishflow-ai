@@ -8,6 +8,11 @@ export const CEFR_CODES = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 export const cefrSchema = z.enum(CEFR_CODES);
 export type Cefr = z.infer<typeof cefrSchema>;
 
+/** Computer-generated voices used for audio (device voices or pre-generated files). */
+export const VOICES = ["female", "male"] as const;
+export const voiceSchema = z.enum(VOICES);
+export type Voice = (typeof VOICES)[number];
+
 export const skillSchema = z.enum([
   "grammar",
   "vocabulary",
@@ -35,6 +40,12 @@ export const multipleChoicePayload = z
     prompt: text,
     /** Optional reading passage shown above the question (placement reading items). */
     passage: z.object({ title: text, text: text }).optional(),
+    /** Optional audio to listen to before answering (placement listening items), as lines with a voice. */
+    listen: z
+      .array(z.object({ voice: voiceSchema, text: text }))
+      .min(1)
+      .max(8)
+      .optional(),
     options: z
       .array(z.object({ id: z.string().min(1), text: text }))
       .min(2)
@@ -243,14 +254,18 @@ export type ParsedLevel = z.output<typeof levelSchema>;
 
 // --- Placement ---------------------------------------------------------------
 
-export const PLACEMENT_SECTIONS = ["grammar", "vocabulary", "reading"] as const;
+export const PLACEMENT_SECTIONS = ["grammar", "vocabulary", "reading", "listening"] as const;
 export const placementItemSchema = z
   .object({
     section: z.enum(PLACEMENT_SECTIONS),
     level: cefrSchema,
     exercise: exerciseSchema,
   })
-  .refine((i) => i.exercise.type === "multiple_choice", "Placement items are multiple choice.");
+  .refine((i) => i.exercise.type === "multiple_choice", "Placement items are multiple choice.")
+  .refine(
+    (i) => i.exercise.type !== "multiple_choice" || (i.section === "listening") === Boolean(i.exercise.payload.listen),
+    "Listening placement items (and only those) have audio to listen to.",
+  );
 export type PlacementItem = z.infer<typeof placementItemSchema>;
 
 export type ExerciseInput = z.input<typeof exerciseSchema>;

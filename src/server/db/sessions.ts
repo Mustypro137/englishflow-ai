@@ -2,6 +2,7 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { buildSessionPlan, type SessionPlan } from "@/lib/learning/planner";
 import { recommend } from "@/lib/learning/recommend/engine";
+import { pickSkillPractice } from "@/server/labs/pick";
 import { getLearnerSnapshot } from "./activity";
 import { prisma } from "./client";
 
@@ -35,7 +36,8 @@ function toView(row: {
 /** A plan without saving it, for the "preview" before starting. */
 export async function previewSession(userId: string, minutes: number, now = new Date()): Promise<SessionPlan> {
   const snapshot = await getLearnerSnapshot(userId, now);
-  return buildSessionPlan(minutes, snapshot, recommend(snapshot));
+  const skill = await pickSkillPractice(userId, snapshot.level, now);
+  return buildSessionPlan(minutes, snapshot, recommend(snapshot), skill);
 }
 
 /** Start a session: the plan is built on the server from the learner's own records and saved as shown. */

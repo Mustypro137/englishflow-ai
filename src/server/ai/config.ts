@@ -2,7 +2,8 @@ import "server-only";
 
 /** AI settings read from the server environment. The key never leaves the server. */
 export interface AiConfig {
-  provider: "anthropic" | null;
+  /** "mock" is a deterministic stand-in for browser tests; it is refused on Vercel. */
+  provider: "anthropic" | "mock" | null;
   apiKey: string | null;
   /** Tutor conversations. */
   model: string;
@@ -24,7 +25,10 @@ function positiveInt(value: string | undefined, fallback: number): number {
 
 export function readAiConfig(env: Record<string, string | undefined> = process.env): AiConfig {
   const apiKey = env.ANTHROPIC_API_KEY?.trim() || null;
-  const provider = env.AI_PROVIDER?.trim().toLowerCase() === "anthropic" && apiKey ? "anthropic" : null;
+  const requested = env.AI_PROVIDER?.trim().toLowerCase();
+  const mockAllowed = env.ALLOW_MOCK_AI === "1" && !env.VERCEL;
+  const provider =
+    requested === "anthropic" && apiKey ? "anthropic" : requested === "mock" && mockAllowed ? "mock" : null;
   const model = env.AI_MODEL?.trim() || DEFAULT_MODEL;
   return {
     provider,

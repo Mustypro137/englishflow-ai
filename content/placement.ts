@@ -1,6 +1,7 @@
 /**
  * Placement check items: grammar and vocabulary (2 per level, A1–C2) and reading
- * (one short passage each at A2, B1 and B2, with 2 questions per passage).
+ * (one short passage each at A2, B1 and B2, with 2 questions per passage) and listening
+ * (two short clips each at A1, A2 and B1). Listening is offered only when the device can play audio.
  * The result is an approximate starting point, never a certified level.
  */
 import { definePlacement } from "./schemas";
@@ -9,13 +10,14 @@ type Opt = [string, string, string];
 
 function mc(
   slug: string,
-  section: "grammar" | "vocabulary" | "reading",
+  section: "grammar" | "vocabulary" | "reading" | "listening",
   level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2",
   prompt: string,
   options: Opt,
   correctIndex: 0 | 1 | 2,
   explanation: string,
   passage?: { title: string; text: string },
+  listen?: { voice: "female" | "male"; text: string }[],
 ) {
   const ids = ["a", "b", "c"];
   return {
@@ -25,13 +27,19 @@ function mc(
       slug: `placement-${slug}`,
       type: "multiple_choice" as const,
       objective: `Placement: ${section} at ${level}.`,
-      instructions: section === "reading" ? "Read the text, then choose the best answer." : "Choose the best answer.",
+      instructions:
+        section === "reading"
+          ? "Read the text, then choose the best answer."
+          : section === "listening"
+            ? "Listen, then choose the best answer. You can listen twice."
+            : "Choose the best answer.",
       explanation,
       difficulty: Math.min(5, ["A1", "A2", "B1", "B2", "C1", "C2"].indexOf(level) + 1),
       skill: section,
       payload: {
         prompt,
         passage,
+        listen,
         options: options.map((text, i) => ({ id: ids[i], text })),
         correct: ids[correctIndex],
       },
@@ -335,5 +343,100 @@ export const placementItems = definePlacement([
     0,
     "Critics say gardens “are often the first spaces to disappear when developers arrive.”",
     cityGardens,
+  ),
+  mc(
+    "l-a1-1",
+    "listening",
+    "A1",
+    "Where is the man going?",
+    ["To the bank", "To the station", "To the hospital"],
+    1,
+    "He asks “Where's the train station?” — the station.",
+    undefined,
+    [
+      { voice: "male", text: "Excuse me, where's the train station, please?" },
+      { voice: "female", text: "It's next to the park. Go straight on." },
+    ],
+  ),
+  mc(
+    "l-a1-2",
+    "listening",
+    "A1",
+    "What time does the shop open?",
+    ["At eight o'clock", "At nine o'clock", "At ten o'clock"],
+    1,
+    "“We open at nine and close at six.”",
+    undefined,
+    [{ voice: "female", text: "Hello, this is City Books. We open at nine and close at six, Monday to Saturday." }],
+  ),
+  mc(
+    "l-a2-1",
+    "listening",
+    "A2",
+    "Why can't Jack go to the cinema?",
+    ["He has to work late", "He doesn't like films", "He is ill"],
+    0,
+    "“I've got to finish a report tonight, so I'm staying late at work.”",
+    undefined,
+    [
+      { voice: "female", text: "Do you want to come to the cinema tonight, Jack?" },
+      { voice: "male", text: "I'd love to, but I've got to finish a report tonight, so I'm staying late at work." },
+    ],
+  ),
+  mc(
+    "l-a2-2",
+    "listening",
+    "A2",
+    "What does the woman decide to buy?",
+    ["The blue jacket", "The black jacket", "Nothing"],
+    1,
+    "The blue one is too small and the black one fits: “I'll take the black one.”",
+    undefined,
+    [
+      { voice: "female", text: "The blue jacket is lovely, but it's too small. Have you got it in a bigger size?" },
+      { voice: "male", text: "Not in blue, I'm afraid. But this black one is the same style." },
+      { voice: "female", text: "Oh, that fits perfectly. I'll take the black one." },
+    ],
+  ),
+  mc(
+    "l-b1-1",
+    "listening",
+    "B1",
+    "What is the speaker's main point?",
+    [
+      "Short breaks during study help you remember more.",
+      "You should study for as long as possible without stopping.",
+      "Studying in the evening is better than in the morning.",
+    ],
+    0,
+    "She explains that studying in short blocks with breaks helps the brain store information.",
+    undefined,
+    [
+      {
+        voice: "female",
+        text: "Many students think that studying for hours without stopping is the best way to learn. In fact, research suggests the opposite. If you study in blocks of about thirty minutes and take short breaks, your brain has time to store what you've learned, so you remember more.",
+      },
+    ],
+  ),
+  mc(
+    "l-b1-2",
+    "listening",
+    "B1",
+    "How does the man feel about the new office?",
+    [
+      "He likes the space but is unhappy about the journey.",
+      "He prefers everything about the old office.",
+      "He is happy because it is closer to his home.",
+    ],
+    0,
+    "He says it's bright and modern, but it now takes him almost an hour to get there.",
+    undefined,
+    [
+      { voice: "female", text: "So, how do you like the new office?" },
+      {
+        voice: "male",
+        text: "Well, it's much brighter and more modern than the old one, which is great. The only thing is, it now takes me almost an hour to get there, and the trains are always packed.",
+      },
+    ],
   ),
 ]);

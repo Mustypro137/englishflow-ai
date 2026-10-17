@@ -15,6 +15,11 @@ const body = z.object({
     .string()
     .regex(/^[a-z0-9-]{1,100}$/)
     .nullable(),
+  scenarioSlug: z
+    .string()
+    .regex(/^[a-z0-9-]{1,100}$/)
+    .nullable()
+    .optional(),
 });
 
 const STATUS: Record<AiErrorKind, number> = {
