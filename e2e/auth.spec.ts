@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, newLearner, newSession, signIn, signOut, signUp } from "./helpers";
 
@@ -102,6 +103,24 @@ test("settings save, persist after reload, and apply the text size", async ({ pa
   await expect(page.getByRole("radio", { name: "60 minutes" })).toBeChecked();
   await expect(page.getByLabel("Name")).toHaveValue("Renamed Learner");
   await expect(page.locator("html")).toHaveAttribute("data-text-scale", "x-large");
+});
+
+test("a learner can download their data as JSON", async ({ page, request }) => {
+  const learner = await signUp(page);
+  await completeOnboarding(page);
+  await page.goto("/app/settings");
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download my data" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^englishflow-export-\d{4}-\d{2}-\d{2}\.json$/);
+  const data = JSON.parse(await readFile(await download.path(), "utf8"));
+  expect(data.account.email).toBe(learner.email);
+  expect(data.profile.onboardingCompletedAt).toBeTruthy();
+
+  // Signed out, there is nothing to download.
+  expect((await request.get("/api/export")).status()).toBe(401);
 });
 
 test("a learner can delete their account, and it is really gone", async ({ page }) => {

@@ -44,3 +44,17 @@ export async function newSession(browser: Browser, testInfo: TestInfo): Promise<
   const context = await browser.newContext(testInfo.project.use);
   return context.newPage();
 }
+
+/** Record Content-Security-Policy violations the browser reports, for every page this tab opens. */
+export async function collectCspViolations(page: Page): Promise<string[]> {
+  const violations: string[] = [];
+  await page.exposeFunction("__reportCsp", (v: string) => violations.push(v));
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (e) => {
+      (window as unknown as { __reportCsp: (v: string) => void }).__reportCsp(
+        `${e.violatedDirective} blocked ${e.blockedURI || "inline"} on ${location.pathname}`,
+      );
+    });
+  });
+  return violations;
+}

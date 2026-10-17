@@ -28,6 +28,7 @@ export const APP_ROUTES = [
   "/app/practice",
   "/app/grammar",
   "/app/calendar",
+  "/app/progress",
   "/app/tutor",
   "/app/settings/memory",
   "/app/practice/more",

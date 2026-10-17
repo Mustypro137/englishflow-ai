@@ -4,14 +4,17 @@ import type { Page } from "@playwright/test";
 import { listeningClips } from "../src/lib/audio/clips";
 import { clipHash } from "../src/lib/audio/manifest";
 import { findListening } from "../src/lib/labs/content";
+import { LAB_URL } from "./servers";
 
 /*
  * Audio fixture for the browser tests: a manifest giving one listening item real audio
- * files, served by intercepting requests to a fake origin with a short generated tone.
+ * files, served by intercepting requests to an unused path on the lab server with a short
+ * generated tone.
  * Only the second test server ("lab server") is pointed at this manifest.
  */
 
-export const FIXTURE_ORIGIN = "https://audio.fixture.test";
+// Same origin as the lab server, so the real Content-Security-Policy applies unchanged.
+export const FIXTURE_ORIGIN = `${LAB_URL}/__fixture-audio`;
 export const FIXTURE_ITEM = "a1-at-the-cafe";
 export const FIXTURE_MANIFEST = resolve("e2e/.generated/audio-manifest.json");
 
