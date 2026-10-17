@@ -28,6 +28,17 @@ const STATUS: Record<AiErrorKind, number> = {
   bad_request: 400,
 };
 
+/** No Origin header (same-origin fetches may omit it) or the same host. "null" or anything else is refused. */
+function sameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  try {
+    return new URL(origin).host === new URL(request.url).host;
+  } catch {
+    return false;
+  }
+}
+
 function errorResponse(kind: AiErrorKind) {
   return Response.json({ error: { kind, message: AI_ERROR_MESSAGES[kind] } }, { status: STATUS[kind] });
 }
@@ -38,8 +49,7 @@ function errorResponse(kind: AiErrorKind) {
  */
 export async function POST(request: Request) {
   // Same-origin JSON only: blocks cross-site form posts.
-  const origin = request.headers.get("origin");
-  if (origin && new URL(origin).host !== new URL(request.url).host) return errorResponse("bad_request");
+  if (!sameOrigin(request)) return errorResponse("bad_request");
   if (!request.headers.get("content-type")?.includes("application/json")) return errorResponse("bad_request");
 
   const user = await getSessionUser();

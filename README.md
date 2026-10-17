@@ -3,7 +3,7 @@
 An English-learning platform for learners from A1 (beginner) to C2 (proficient). It combines structured lessons, active recall, spaced repetition, skill practice and an AI tutor, with the goal of **independent ability**: understanding English, remembering it and producing it without help.
 
 > **Status: Milestones 1–4 of 8 complete. Live at https://englishflow-ai.vercel.app**
-> Accounts, a structured A1–C2 curriculum with **8 complete A1 lessons**, server-graded exercises, a placement check, **spaced-repetition reviews**, **48 A1 vocabulary words**, a personal notebook (flashcards, notes, bookmarks) and a mistake tracker. The dashboard, study planner and AI tutor are **not built yet**. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
+> Accounts, a structured A1–C2 curriculum with **8 complete A1 lessons**, server-graded exercises, a placement check, **spaced-repetition reviews**, **48 A1 vocabulary words**, a notebook, a mistake tracker, a **Today dashboard with explained recommendations**, a study planner and challenges, and an **AI tutor** with AI-generated practice. The AI parts need an Anthropic API key; without one they show a clear setup message and everything else keeps working. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
 
 ## Run it on your computer
 
@@ -91,6 +91,15 @@ e2e/                         Playwright browser and accessibility tests
 
 ## Completed features
 
+**Milestone 6: AI tutor, saved learning context, AI-generated practice.** Needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` on the server; without them every AI feature says plainly that it isn't set up.
+- **AI tutor** (`/app/tutor`): saved conversations in 12 modes (explain, understand a sentence, conversation, correct my writing, vocabulary, quiz, help me remember, listening as a transcript, build sentences, challenge, explain my mistakes, review my learning). Replies stream in and are shown as safe, limited Markdown (no HTML). Concise or detailed answers per message; hint-first, guided or direct answers set in Settings. Every lesson links to it.
+- The tutor adapts its English to the learner's level and follows teaching rules: hints before answers when chosen, explain why something is wrong, separate mistakes from acceptable alternatives, never invent rules, say when usage is regional or context-dependent, little praise.
+- **Learning history is opt-in** (Settings → "Let the AI tutor use my learning history", off by default). When on, the tutor sees only a short summary: level and how it was set, the current lesson, the last 5 relevant answers, up to 3 recurring mistakes, recently saved words, topic counts and notes the learner has confirmed. Never ids, email or the full history.
+- **Saved learning context** (`/app/settings/memory`): notes kept separately from chats (how I like to learn, mistakes I often make, goals). Learners add, edit and delete them. "Suggest things to remember" asks the AI for up to three notes, which are stored as **unconfirmed** and ignored until the learner confirms them.
+- **More practice** (`/app/practice/more`, linked from lessons and the grammar page): new exercises for a topic you've started, at its level. The AI fills a structured format; each item must pass the same Zod checks as course content, have a clear answer that our own grader accepts, have no "wrong answer" that is also accepted, and not duplicate an existing question (hash). Failing items are thrown away. Passing items are cached and reused, marked "AI-generated" and "not reviewed by a teacher", and answers to them **never change mastery, reviews or level**.
+- Reliability and limits: server-side provider interface (`src/server/ai/`) with an Anthropic adapter and a "not configured" adapter, request deadline and SDK retries, provider errors mapped to friendly messages, per-learner limits (requests per minute and a daily token budget, `AiUsage`), a stable cached system prompt. A partial or failed reply is never saved as if it were complete.
+- The API key stays on the server: CI builds with a canary key and fails if the key, its name or the AI SDK appears in any browser file (`npm run check:bundle`).
+
 **Milestone 5: Today dashboard, recommendations, study planner, challenges.**
 - **Today** (`/app`): estimated level (labelled as an estimate), up to four recommendations each with the reason behind it, reviews due, current objectives, skill progress by topic state (with "what these measure"), recent mistakes, a 7-day activity chart, challenges and achievements. Every number comes from the learner's own records; a new learner sees a clear empty state.
 - Rule-based recommendation engine (`src/lib/learning/recommend/engine.ts`), in priority order: due reviews → topics with repeated mistakes → unfinished prerequisites of the next lesson → under-practised skills for the learner's goals → next lesson at their level → a mixed check after finishing a unit.
@@ -137,18 +146,20 @@ e2e/                         Playwright browser and accessibility tests
 
 - **Lesson content was written with AI assistance and has not yet been reviewed by an English teacher.** Every lesson shows a "draft" note. Automated checks confirm that every listed answer is graded correctly, but a human review is still needed before launch.
 - Only A1 has lessons (8 of 12 planned). A2–C2 are outlines.
-- No AI tutor or AI feedback on writing yet (Milestone 6). Challenge writing is counted, not corrected.
+- **The AI tutor and generated practice only work once an Anthropic API key is configured** (see `.env.example`). Using them costs money per request; per-learner limits are set with `AI_DAILY_TOKEN_BUDGET_PER_USER` and `AI_REQUESTS_PER_MINUTE_PER_USER`.
+- AI replies can be wrong. The tutor says so on the page, and generated exercises are checked automatically but not by a teacher. Answers to generated exercises don't count towards streaks, challenges or mastery.
+- Challenge and "Use it" writing is counted or self-checked, not corrected by AI yet (the tutor's "Correct my writing" mode can do this on request; built-in writing feedback is Milestone 7).
+- The tutor's "listening" mode works with written transcripts only; there is no audio yet (Milestone 7).
 - Listening, reading, speaking and pronunciation are not taught or measured yet (Milestone 7); the planner uses vocabulary time instead.
 - Vocabulary covers A1 only (48 words) and, like the lessons, awaits review by an English teacher.
-- Reviews ask exercises exactly as in the lesson; varied re-phrasings come with AI-generated practice (Milestone 6).
-- The application ("Use it") task is self-checked and not saved; AI feedback on free writing comes in Milestone 6.
+- Reviews ask exercises exactly as in the lesson. AI-generated practice offers new questions, but it isn't part of the review schedule.
+- The application ("Use it") task is self-checked and not saved.
 - The placement check is short (30 questions) and section-based, not adaptive. It is an estimate only.
 - A not-written lesson URL shows "Page not found", but with HTTP status 200 rather than 404 (a Next.js streaming limitation; the page is marked noindex).
 - **Email is not configured yet.** Until `RESEND_API_KEY` and `EMAIL_FROM` are set, email verification is not required and emails print to the terminal (development) or are not sent (production). Configure Resend before a public launch.
 - The first request after the free Neon database has been idle can take a few seconds while it wakes up. From a development machine far from the database (here, Nigeria → US East), each database round trip takes about 250 ms; in production the app and database should run in the same region.
 - Occasionally the database resets an idle connection. The app retries safe operations (reads, updates, upserts) once on a fresh connection; inserts are never retried, to avoid duplicates.
 - Light theme only.
-- Not deployed yet. See [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md) §4.
+- Deployed at https://englishflow-ai.vercel.app (Vercel + Neon). See [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md).
 - `npm audit` reports high-severity advisories in **development-only** lint tooling (`micromatch` via `eslint-config-next`). They don't ship to the website.
-- The CI workflow hasn't run on GitHub yet (the repository isn't on GitHub yet).
 - Privacy policy and terms are placeholders that need legal review.
