@@ -188,6 +188,8 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 
 **Completion criteria:** acceptance checks #10 and #11 pass. No API key is reachable from client bundles (verified by a build-output grep in CI).
 
+**Status: 🟨 built and tested on branch `milestone-6` (2026-10-17); goes live when merged to `main`.** Verified with lint, typecheck, Prettier check, 163 unit tests (13 files; new: AI config, generated-exercise validation and contradiction checks, schema rejection of malformed output, context builder includes only allowed fields, prompts, history trimming, safe Markdown, provider error mapping), 50 integration tests (6 files; new, with a mocked provider: missing key → setup state and nothing stored, timeout/5xx → friendly error and no partial reply saved, invalid structured output → rejected and not stored, duplicates skipped, generated answers never touch mastery/reviews/mistakes/level, rate and daily token limits, cross-learner isolation for conversations and memory, unconfirmed memory never sent), a production build, the client-bundle secret check, and the full Playwright suite on desktop and phone (161 passed, 5 skipped as before), including the tutor setup message (acceptance #10) and axe on the new pages. Not yet exercised against the real Anthropic API (no key configured). Deviations: answers to AI-generated practice don't count towards streaks or challenges; the tutor's listening mode uses transcripts only; memory suggestions are on request ("Suggest things to remember") rather than automatic. One additive migration (`tutor_conversation`, `tutor_message`, `learner_memory`, `ai_usage`, `exercise.contentHash`, attempt context `generated`).
+
 ---
 
 ## Milestone 7 — Listening, reading, writing, pronunciation, communication
