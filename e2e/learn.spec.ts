@@ -108,7 +108,8 @@ test("placement: answer, see an honest estimate, choose a level, and the home pa
   await page.getByRole("radio", { name: "B1" }).check();
   await page.getByRole("button", { name: "Start at this level" }).click();
   await expect(page).toHaveURL(/\/app$/);
-  await expect(page.getByRole("definition").filter({ hasText: "B1" })).toBeVisible();
+  await expect(page.getByText(/Working level: B1/)).toBeVisible();
+  await expect(page.getByText("your own estimate", { exact: true })).toBeVisible();
   await expect(page.getByText("Lessons at your level (B1) are planned but not written yet.")).toBeVisible();
   await expect(page.getByRole("link", { name: "Take the placement check" })).toHaveCount(0);
 });

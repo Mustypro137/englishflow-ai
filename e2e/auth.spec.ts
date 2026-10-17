@@ -9,7 +9,8 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
 
   await expect(page.getByRole("heading", { level: 1, name: `Welcome, ${learner.name}` })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
-  await expect(page.getByRole("definition").filter({ hasText: "Your own estimate" })).toBeVisible();
+  await expect(page.getByText(/Working level: A2/)).toBeVisible();
+  await expect(page.getByText("your own estimate", { exact: true })).toBeVisible();
 
   await signOut(page);
   await signIn(page, learner.email);

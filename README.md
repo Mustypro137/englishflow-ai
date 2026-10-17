@@ -91,6 +91,16 @@ e2e/                         Playwright browser and accessibility tests
 
 ## Completed features
 
+**Milestone 5: Today dashboard, recommendations, study planner, challenges.**
+- **Today** (`/app`): estimated level (labelled as an estimate), up to four recommendations each with the reason behind it, reviews due, current objectives, skill progress by topic state (with "what these measure"), recent mistakes, a 7-day activity chart, challenges and achievements. Every number comes from the learner's own records; a new learner sees a clear empty state.
+- Rule-based recommendation engine (`src/lib/learning/recommend/engine.ts`), in priority order: due reviews → topics with repeated mistakes → unfinished prerequisites of the next lesson → under-practised skills for the learner's goals → next lesson at their level → a mixed check after finishing a unit.
+- **Study planner** (`/app/session`): 10/20/30/60 minutes or any length from 5 to 120. Starts from the 30-minute template (review 5 · new 7 · targeted 7 · vocabulary 6 · use it 5) and adapts: no reviews due → more new learning; a big backlog → more review; very short sessions keep only the most useful blocks. Tick off steps; finished sessions appear in the calendar.
+- **Mixed practice** (`/app/practice`): 8 questions from finished lessons (or one unit), without hints, graded on the server. It never counts towards finishing a lesson.
+- **Challenges** (`/app/challenges`): "write five sentences of your own" every day plus one rotating daily challenge and one weekly challenge, all measured from real activity. Writing is saved; only real sentences (3+ words) count.
+- **Grammar** (`/app/grammar`): every grammar topic A1–C2 with your state, prerequisites and the lesson that teaches it (or "planned").
+- **Study calendar** (`/app/calendar`): days studied per month, review load for the next 14 days, planned and finished sessions.
+- Gentle streak (one missed day a week is forgiven; nothing is taken away), learning points that reward answers given without help, and achievements derived from real events. All can be hidden in Settings.
+
 **Milestone 4: vocabulary, active recall, spaced repetition, mistakes.**
 - Review queue mixing three kinds of item: lesson exercises (they return the next day and must be answered from memory, graded on the server), saved words (alternating "type the word from its meaning" and "what does it mean?") and your own flashcards.
 - SM-2-style scheduler: learning steps (10 min, 1 day), Again/Hard/Good/Easy, growing intervals, a lapse brings the item back within minutes, stable 5% spread on long intervals. "Due today" uses the learner's own time zone, including daylight-saving days. Every review is logged.
@@ -127,7 +137,8 @@ e2e/                         Playwright browser and accessibility tests
 
 - **Lesson content was written with AI assistance and has not yet been reviewed by an English teacher.** Every lesson shows a "draft" note. Automated checks confirm that every listed answer is graded correctly, but a human review is still needed before launch.
 - Only A1 has lessons (8 of 12 planned). A2–C2 are outlines.
-- No dashboard statistics, study planner, challenges or AI tutor yet (Milestones 5–8).
+- No AI tutor or AI feedback on writing yet (Milestone 6). Challenge writing is counted, not corrected.
+- Listening, reading, speaking and pronunciation are not taught or measured yet (Milestone 7); the planner uses vocabulary time instead.
 - Vocabulary covers A1 only (48 words) and, like the lessons, awaits review by an English teacher.
 - Reviews ask exercises exactly as in the lesson; varied re-phrasings come with AI-generated practice (Milestone 6).
 - The application ("Use it") task is self-checked and not saved; AI feedback on free writing comes in Milestone 6.

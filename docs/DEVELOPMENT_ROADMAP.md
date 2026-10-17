@@ -12,7 +12,7 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 | 2 | Database, auth, onboarding, profiles | ✅ | Neon (Resend still to configure) |
 | 3 | Curriculum, exercises, grading, placement v1 | ✅ | — |
 | 4 | Vocabulary, active recall, SRS, mistakes | ✅ | — |
-| 5 | Dashboard, recommendations, planner, challenges | ⬜ | — |
+| 5 | Dashboard, recommendations, planner, challenges | 🟨 built on branch `milestone-5`, awaiting merge | — |
 | 6 | AI tutor and AI-generated exercises | ⬜ | Anthropic API |
 | 7 | Listening, reading, writing, pronunciation, communication | ⬜ | TTS provider, object storage |
 | 8 | Analytics, accessibility, security, deployment hardening | ⬜ | Sentry |
@@ -138,6 +138,8 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 ---
 
 ## Milestone 5 — Dashboard, recommendations, study planner, challenges
+
+**Status: 🟨 built and tested on branch `milestone-5` (2026-10-17); goes live when merged to `main`.** Verified with lint, typecheck, Prettier check, 129 unit tests (12 files: every recommendation rule and its order, planner allocation and adaptation, streak grace days, challenges, achievements, time zones), 38 integration tests (5 files, isolated schema: empty and real-activity dashboard, practice never completes a lesson, sessions, writing challenge, cross-learner isolation), a production build, and the full Playwright suite on desktop and phone (147 passed, 5 skipped as before; 4 older tests that checked the old home page's layout were updated and then passed on rerun), including axe on all new pages. Browser tests now run in their own `englishflow_e2e` schema, so they no longer create accounts in the live database. Deviations: the dashboard lives at `/app` (not `/app/dashboard`) and replaces the old Home page; "write five sentences" is offered every day so production practice is always available; streaks forgive one missed day per week instead of "streak freezes"; there are no curriculum-wide challenges yet; challenge writing is counted, not corrected (AI feedback is M6). One migration (additive: `study_session`, `challenge_submission`, `concept_progress.masteredAt`, attempt context `practice`) is applied on deploy.
 
 **Goal:** the app answers "what next?" with real data and explains why.
 
