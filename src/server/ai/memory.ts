@@ -1,16 +1,10 @@
 import "server-only";
-import { z } from "zod";
 import { AiError } from "@/lib/ai/errors";
 import { prisma } from "@/server/db/client";
-import { addSuggestedMemories, MAX_MEMORY_LENGTH, MEMORY_KINDS } from "@/server/db/memory";
+import { addSuggestedMemories } from "@/server/db/memory";
+import { memorySuggestionSchema } from "./memory-schema";
 import { getAiProvider } from "./provider";
 import { recordAiUsage, reserveAiRequest } from "./usage";
-
-export const memorySuggestionSchema = z.object({
-  memories: z
-    .array(z.object({ kind: z.enum(MEMORY_KINDS), content: z.string().trim().min(3).max(MAX_MEMORY_LENGTH) }))
-    .max(3),
-});
 
 const SYSTEM = `You help an English-learning app keep short notes about a learner, which the learner reviews before they are used.
 From the conversation, propose at most three notes that would help future tutoring:

@@ -10,7 +10,6 @@ export class NullProvider implements AiProvider {
     return false;
   }
 
-  // eslint-disable-next-line require-yield
   async *chat(): AsyncIterable<ChatChunk> {
     throw new AiError("not_configured");
   }

@@ -1,14 +1,14 @@
 import "server-only";
+import { MAX_MEMORY_LENGTH, MEMORY_KINDS, type MemoryKindName } from "@/server/ai/memory-schema";
 import { prisma } from "./client";
+
+export { MAX_MEMORY_LENGTH, MEMORY_KINDS, type MemoryKindName };
 
 /*
  * Learner memory: saved learning context the tutor may use, managed by the learner.
  * AI suggestions are stored unverified and are not used until the learner confirms them.
  */
 
-export const MEMORY_KINDS = ["preference", "recurring_error", "goal"] as const;
-export type MemoryKindName = (typeof MEMORY_KINDS)[number];
-export const MAX_MEMORY_LENGTH = 300;
 export const MAX_MEMORIES = 50;
 
 export interface MemoryView {

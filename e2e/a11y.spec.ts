@@ -18,7 +18,8 @@ for (const route of PUBLIC_ROUTES) {
 }
 
 test("no serious accessibility violations in the signed-in app", async ({ page }) => {
-  test.setTimeout(120_000);
+  // Visits every signed-in page in one session; allow about 15 seconds per page.
+  test.setTimeout(20_000 + APP_ROUTES.length * 15_000);
   await signUp(page);
   expect(await seriousViolations(page), "/app/onboarding").toEqual([]);
   await completeOnboarding(page);
