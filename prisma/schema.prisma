@@ -41,6 +41,9 @@ model User {
   bookmarks            Bookmark[]
   studySessions        StudySession[]
   challengeSubmissions ChallengeSubmission[]
+  tutorConversations   TutorConversation[]
+  memories             LearnerMemory[]
+  aiUsage              AiUsage[]
 
   @@map("user")
 }
@@ -340,8 +343,11 @@ model Exercise {
   skill            Skill
   placementSection Skill?
   placementLevel   CefrLevel?
+  /// "seed" for curriculum content, "ai" for exercises generated on request (Milestone 6).
   source           String            @default("seed")
   reviewStatus     String            @default("pending_human_review")
+  /// Hash of the normalised question, used to reject duplicate generated exercises.
+  contentHash      String?           @unique
   archivedAt       DateTime?
   concepts         ExerciseConcept[]
   attempts         ExerciseAttempt[]
@@ -372,6 +378,8 @@ enum AttemptContext {
   placement
   review
   practice
+  /// Answers to AI-generated exercises: recorded, but never used as evidence of mastery or level.
+  generated
 }
 
 enum MasteryState {
@@ -684,4 +692,106 @@ model ChallengeSubmission {
   @@unique([userId, challengeSlug, periodKey])
   @@index([userId, completedAt])
   @@map("challenge_submission")
+}
+
+// ---------------------------------------------------------------------------
+// AI tutor (Milestone 6)
+// ---------------------------------------------------------------------------
+
+enum TutorMode {
+  explain
+  understand_sentence
+  conversation
+  correct_writing
+  vocabulary
+  quiz
+  remember
+  listening
+  build_sentences
+  challenge
+  explain_mistakes
+  review_history
+}
+
+enum TutorRole {
+  user
+  assistant
+}
+
+model TutorConversation {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode       TutorMode
+  title      String
+  /// Lesson the conversation was started from, if any.
+  lessonSlug String?
+  messages   TutorMessage[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([userId, updatedAt])
+  @@map("tutor_conversation")
+}
+
+model TutorMessage {
+  id             String            @id @default(cuid())
+  conversationId String
+  conversation   TutorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           TutorRole
+  content        String
+  /// Explanation style the learner asked for with this message.
+  style          ExplanationStyle?
+  inputTokens    Int?
+  outputTokens   Int?
+  createdAt      DateTime          @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("tutor_message")
+}
+
+enum MemoryKind {
+  preference
+  recurring_error
+  goal
+}
+
+enum MemorySource {
+  learner
+  ai
+  system
+}
+
+/// Saved learning context, kept separate from chat messages and managed by the learner.
+model LearnerMemory {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      MemoryKind
+  content   String
+  source    MemorySource
+  /// AI-proposed items stay unverified (and unused) until the learner confirms them.
+  verified  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("learner_memory")
+}
+
+/// Per-learner AI usage for one UTC day, plus a one-minute request window.
+model AiUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// UTC day, "YYYY-MM-DD".
+  day          String
+  requests     Int      @default(0)
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  windowStart  DateTime @default(now())
+  windowCount  Int      @default(0)
+
+  @@unique([userId, day])
+  @@map("ai_usage")
 }

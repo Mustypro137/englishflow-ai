@@ -97,7 +97,7 @@ export async function getCurriculumOverview(): Promise<CurriculumLevel[]> {
 }
 
 /** Validate a stored exercise against the content schema before using it. */
-function parseStored(row: Exercise) {
+export function parseStoredExercise(row: Exercise) {
   return exerciseSchema.parse({
     slug: row.slug,
     type: row.type,
@@ -111,8 +111,8 @@ function parseStored(row: Exercise) {
   });
 }
 
-function toClient(row: Exercise): ClientExercise {
-  return toClientExercise({ ...parseStored(row), id: row.id });
+export function toClient(row: Exercise): ClientExercise {
+  return toClientExercise({ ...parseStoredExercise(row), id: row.id });
 }
 
 export interface LessonView {
@@ -185,7 +185,7 @@ export async function getExercisesForGrading(ids: string[]): Promise<GradingReco
     include: { concepts: true },
   });
   return rows.map((row) => ({
-    exercise: parseStored(row),
+    exercise: parseStoredExercise(row),
     id: row.id,
     lessonId: row.lessonId,
     phase: row.phase,

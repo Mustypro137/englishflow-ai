@@ -55,7 +55,7 @@ export interface MistakeView {
   id: string;
   createdAt: Date;
   resolvedAt: Date | null;
-  context: "lesson" | "placement" | "review" | "practice";
+  context: "lesson" | "placement" | "review" | "practice" | "generated";
   originalAnswer: string;
   correctAnswer: string;
   explanation: string;
