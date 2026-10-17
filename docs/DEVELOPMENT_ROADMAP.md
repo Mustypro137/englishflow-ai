@@ -1,6 +1,6 @@
 # EnglishFlow AI — Development Roadmap
 
-_Last updated 2026-10-16. Milestones 1–4 complete; Milestones 5–8 not started. Deployed at https://englishflow-ai.vercel.app._
+_Last updated 2026-10-17. Milestones 1–7 complete; Milestone 8 not started. Deployed at https://englishflow-ai.vercel.app._
 
 The milestones follow master prompt §21. Each one is a **coherent, usable increment**: implement → run tests → inspect the running app → fix → document limitations, then move on. "Smaller and working" beats "broad and incomplete".
 
@@ -13,8 +13,8 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 | 3 | Curriculum, exercises, grading, placement v1 | ✅ | — |
 | 4 | Vocabulary, active recall, SRS, mistakes | ✅ | — |
 | 5 | Dashboard, recommendations, planner, challenges | ✅ | — |
-| 6 | AI tutor and AI-generated exercises | 🟨 built on branch `milestone-6`, awaiting merge | Anthropic API (works without it: setup message) |
-| 7 | Listening, reading, writing, pronunciation, communication | ⬜ | TTS provider, object storage |
+| 6 | AI tutor and AI-generated exercises | ✅ | Anthropic API (works without it: setup message) |
+| 7 | Listening, reading, writing, pronunciation, communication | ✅ | TTS provider, object storage (optional; works without them) |
 | 8 | Analytics, accessibility, security, deployment hardening | ⬜ | Sentry |
 
 ---
@@ -211,7 +211,7 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 
 **Completion criteria:** every audio control plays real audio. No pronunciation-scoring claims without a supporting service. Speaking never blocks unrelated progress.
 
-**Status: 🟨 built and tested on branch `milestone-7` (2026-10-17); goes live when merged to `main`.** RESULTS_PLACEHOLDER Deviations: no TTS account exists yet, so audio comes from pre-generated files **when present** (hash-checked manifest, generation script ready for OpenAI TTS + Vercel Blob) and otherwise from the device's own speech voice, labelled as such; controls are hidden when neither exists. Placement listening is reported separately and doesn't change the starting level (it only measures up to B1 and depends on device audio). Optional speech recognition uses the browser's built-in service (disclosed), not a server STT. Content covers A1–A2. One additive migration (`skill_activity`, `writing_draft`, saved-word source sentence, tutor scenario, placement listening level, phase/context `skill_lab`). After merging, the new content must be loaded with `npm run db:seed` against production.
+**Status: ✅ merged and live (2026-10-17).** Verified with lint, typecheck, Prettier check, 192 unit tests (14 files; new: dictation comparison incl. contractions, numbers and spelling slips, rewrite diffs, audio manifest hashing and planning, skill-lab content validation, sentence studio checks, writing-feedback clean-up that drops items quoting words the learner didn't write, placement with listening), 65 integration tests (7 files; new: lab questions graded on the server without touching mastery, reviews or mistakes, saving reading words with their sentence, writing drafts and three-layer feedback with a mocked provider, role-play scenarios, separate listening placement level, cross-learner privacy), a production build, the client-bundle secret check, and the full Playwright suite on desktop and phone (207 passed, 5 skipped as before; one phone test failed only because Playwright couldn't write its trace file and passed on rerun), including listening without audio, writing and conversation without AI, text alternatives for every speaking task, and axe on the new pages. Deviations: no TTS account exists yet, so audio comes from pre-generated files **when present** (hash-checked manifest, generation script ready for OpenAI TTS + Vercel Blob) and otherwise from the device's own speech voice, labelled as such; controls are hidden when neither exists. Placement listening is reported separately and doesn't change the starting level (it only measures up to B1 and depends on device audio). Optional speech recognition uses the browser's built-in service (disclosed), not a server STT. Content covers A1–A2. One additive migration (`skill_activity`, `writing_draft`, saved-word source sentence, tutor scenario, placement listening level, phase/context `skill_lab`). The migration and the new content were applied to production on 2026-10-17.
 
 ---
 
