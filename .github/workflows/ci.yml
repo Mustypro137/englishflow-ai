@@ -35,6 +35,9 @@ jobs:
       TEST_DATABASE_URL: postgresql://englishflow:englishflow@localhost:5432/englishflow
       BETTER_AUTH_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
       BETTER_AUTH_URL: http://localhost:3100
+      # Canary only: AI_PROVIDER is unset, so the app runs without AI (and shows the setup
+      # message), while the bundle check proves this value never reaches the browser.
+      ANTHROPIC_API_KEY: sk-ant-ci-canary-not-a-real-key-0000
 
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +66,9 @@ jobs:
         run: npm run test:integration
 
       - run: npm run build
+
+      - name: Check that no AI secret reaches the browser
+        run: npm run check:bundle
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium

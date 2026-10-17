@@ -12,7 +12,14 @@ import { prisma } from "./client";
 
 export type PreferencesView = Pick<
   LearningPreferences,
-  "dailyMinutes" | "explanationStyle" | "translationSupport" | "textScale" | "reducedMotion" | "gamificationEnabled"
+  | "dailyMinutes"
+  | "explanationStyle"
+  | "translationSupport"
+  | "textScale"
+  | "reducedMotion"
+  | "gamificationEnabled"
+  | "tutorHintMode"
+  | "aiContextSharing"
 >;
 
 export const DEFAULT_PREFERENCES: PreferencesView = {
@@ -22,6 +29,8 @@ export const DEFAULT_PREFERENCES: PreferencesView = {
   textScale: "normal",
   reducedMotion: false,
   gamificationEnabled: true,
+  tutorHintMode: "hint_first",
+  aiContextSharing: false,
 };
 
 export async function getProfile(userId: string): Promise<Profile | null> {
@@ -31,8 +40,26 @@ export async function getProfile(userId: string): Promise<Profile | null> {
 export async function getPreferences(userId: string): Promise<PreferencesView> {
   const prefs = await prisma.learningPreferences.findUnique({ where: { userId } });
   if (!prefs) return DEFAULT_PREFERENCES;
-  const { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion, gamificationEnabled } = prefs;
-  return { dailyMinutes, explanationStyle, translationSupport, textScale, reducedMotion, gamificationEnabled };
+  const {
+    dailyMinutes,
+    explanationStyle,
+    translationSupport,
+    textScale,
+    reducedMotion,
+    gamificationEnabled,
+    tutorHintMode,
+    aiContextSharing,
+  } = prefs;
+  return {
+    dailyMinutes,
+    explanationStyle,
+    translationSupport,
+    textScale,
+    reducedMotion,
+    gamificationEnabled,
+    tutorHintMode,
+    aiContextSharing,
+  };
 }
 
 export async function completeOnboarding(userId: string, input: OnboardingInput): Promise<void> {

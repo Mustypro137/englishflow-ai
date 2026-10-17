@@ -69,6 +69,7 @@ describe("preferencesUpdateSchema", () => {
       explanationStyle: "detailed",
       textScale: "large",
       reducedMotion: "on",
+      tutorHintMode: "guided",
     });
     expect(result).toEqual({
       dailyMinutes: 30,
@@ -77,6 +78,8 @@ describe("preferencesUpdateSchema", () => {
       translationSupport: false,
       reducedMotion: true,
       gamificationEnabled: false,
+      tutorHintMode: "guided",
+      aiContextSharing: false,
     });
   });
 });

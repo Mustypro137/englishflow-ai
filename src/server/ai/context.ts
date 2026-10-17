@@ -40,7 +40,11 @@ export function selectContext(r: ContextRecords): TutorContext {
   const level = r.profile?.estimatedLevel ?? r.profile?.selfReportedLevel ?? null;
   const base = {
     level,
-    levelSource: r.profile?.estimatedLevel ? r.profile.levelSource : r.profile?.selfReportedLevel ? "self_reported" : null,
+    levelSource: r.profile?.estimatedLevel
+      ? r.profile.levelSource
+      : r.profile?.selfReportedLevel
+        ? "self_reported"
+        : null,
     lesson: r.lesson ? { title: clip(r.lesson.title), objective: clip(r.lesson.objective) } : null,
   };
   if (!r.sharing) return { ...base, history: null };
@@ -94,7 +98,8 @@ export function formatContext(ctx: TutorContext): string {
   );
   if (h.recentAttempts.length) {
     lines.push("Recent answers:");
-    for (const a of h.recentAttempts) lines.push(`- ${a.task} — answered "${a.answer}" (${a.correct ? "correct" : "wrong"})`);
+    for (const a of h.recentAttempts)
+      lines.push(`- ${a.task} — answered "${a.answer}" (${a.correct ? "correct" : "wrong"})`);
   }
   if (h.misconceptions.length) {
     lines.push("Recurring mistakes not yet fixed:");

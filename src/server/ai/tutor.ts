@@ -51,7 +51,8 @@ export async function startTutorTurn(
   await reserveAiRequest(userId);
 
   const conversation =
-    existing ?? (await createConversation(userId, { mode: input.mode, firstMessage: message, lessonSlug: input.lessonSlug }));
+    existing ??
+    (await createConversation(userId, { mode: input.mode, firstMessage: message, lessonSlug: input.lessonSlug }));
   const [prefs, previous] = await Promise.all([
     prisma.learningPreferences.findUnique({ where: { userId }, select: { tutorHintMode: true } }),
     prisma.tutorMessage.findMany({

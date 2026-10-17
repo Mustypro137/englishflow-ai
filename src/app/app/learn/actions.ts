@@ -3,6 +3,7 @@
 import { z } from "zod";
 import type { GradeResult } from "@/lib/learning/grading/grade-exercise";
 import { requireUser } from "@/server/auth/session";
+import { recordGeneratedAttempt } from "@/server/db/generated";
 import {
   InvalidResponseError,
   type LessonProgressSummary,
@@ -15,11 +16,11 @@ const attemptInput = z.object({
   response: z.unknown(),
   hintsUsed: z.number().int().min(0).max(10),
   revealedAnswer: z.boolean(),
-  context: z.enum(["lesson", "practice"]).default("lesson"),
+  context: z.enum(["lesson", "practice", "generated"]).default("lesson"),
 });
 
 export type AttemptActionResult =
-  { ok: true; result: GradeResult; progress: LessonProgressSummary } | { ok: false; error: string };
+  { ok: true; result: GradeResult; progress: LessonProgressSummary | null } | { ok: false; error: string };
 
 /** Grade an answer on the server and save it to the signed-in learner's records. */
 export async function submitAttemptAction(input: z.input<typeof attemptInput>): Promise<AttemptActionResult> {
@@ -28,6 +29,9 @@ export async function submitAttemptAction(input: z.input<typeof attemptInput>): 
   if (!parsed.success) return { ok: false, error: "That answer couldn't be read. Please try again." };
   try {
     const { context, ...attempt } = parsed.data;
+    if (context === "generated") {
+      return { ok: true, result: await recordGeneratedAttempt(user.id, attempt), progress: null };
+    }
     const { result, progress } = await recordAttempt(user.id, { ...attempt, response: attempt.response }, context);
     return { ok: true, result, progress };
   } catch (err) {

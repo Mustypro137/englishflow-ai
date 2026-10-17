@@ -85,6 +85,17 @@ export default async function GrammarPage() {
                         <span className="text-muted">Lesson planned — not written yet.</span>
                       )}
                     </p>
+                    {published.length > 0 && stateBySlug.get(c.slug) && stateBySlug.get(c.slug) !== "new" ? (
+                      <p className="mt-1 text-sm">
+                        <Link
+                          href={`/app/practice/more?concept=${c.slug}`}
+                          className="text-primary font-medium underline"
+                        >
+                          More practice
+                        </Link>{" "}
+                        <span className="text-muted">(AI-generated)</span>
+                      </p>
+                    ) : null}
                   </li>
                 );
               })}

@@ -29,6 +29,12 @@ export const EXPLANATION_STYLES = [
   { value: "detailed", label: "Detailed", hint: "Fuller explanations with more examples." },
 ] as const;
 
+export const TUTOR_HINT_MODES = [
+  { value: "hint_first", label: "Hint first", hint: "A hint before the answer, so you can try again." },
+  { value: "guided", label: "Guided", hint: "Small steps towards the answer, with questions." },
+  { value: "direct", label: "Direct", hint: "The answer straight away, with an explanation." },
+] as const;
+
 export const TEXT_SCALES = [
   { value: "normal", label: "Standard" },
   { value: "large", label: "Large" },
@@ -88,6 +94,8 @@ export const preferencesUpdateSchema = z.object({
   textScale: z.enum(["normal", "large", "x_large"]),
   reducedMotion: checkbox,
   gamificationEnabled: checkbox,
+  tutorHintMode: z.enum(["hint_first", "guided", "direct"]),
+  aiContextSharing: checkbox,
 });
 export type PreferencesUpdateInput = z.output<typeof preferencesUpdateSchema>;
 

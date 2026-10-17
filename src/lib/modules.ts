@@ -194,7 +194,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "tutor",
     group: "support",
     milestone: 6,
-    status: "planned",
+    status: "available",
     primaryOnMobile: true,
   },
   {

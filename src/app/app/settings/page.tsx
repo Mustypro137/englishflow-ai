@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Container } from "@/components/ui/container";
 import { requireUser } from "@/server/auth/session";
@@ -30,6 +31,15 @@ export default async function SettingsPage() {
 
       <Section id="preferences" title="Learning and accessibility">
         <PreferencesForm defaults={prefs} />
+      </Section>
+
+      <Section id="tutor" title="AI tutor memory">
+        <p className="text-muted text-sm">
+          Notes the tutor may use, such as how you like to learn. AI suggestions are only used after you confirm them.
+        </p>
+        <Link href="/app/settings/memory" className="text-primary text-sm font-medium underline">
+          Manage saved learning context
+        </Link>
       </Section>
 
       <Section id="account" title="Account">

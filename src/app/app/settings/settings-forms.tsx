@@ -6,7 +6,13 @@ import { TimezoneSelect } from "@/components/forms/timezone-select";
 import { useFormAction } from "@/components/forms/use-form-action";
 import { SubmitButton } from "@/components/forms/submit-button";
 import type { PreferencesView } from "@/server/db/learner-profile";
-import { DAILY_MINUTE_OPTIONS, EXPLANATION_STYLES, GOALS, TEXT_SCALES } from "@/lib/validation/profile";
+import {
+  DAILY_MINUTE_OPTIONS,
+  EXPLANATION_STYLES,
+  GOALS,
+  TEXT_SCALES,
+  TUTOR_HINT_MODES,
+} from "@/lib/validation/profile";
 import { updatePreferencesAction, updateProfileAction } from "../actions";
 
 export function ProfileForm({
@@ -72,6 +78,14 @@ export function PreferencesForm({ defaults }: { defaults: PreferencesView }) {
         error={errors.explanationStyle}
       />
       <ChoiceGroup
+        legend="When you ask the tutor for an answer"
+        name="tutorHintMode"
+        type="radio"
+        options={TUTOR_HINT_MODES}
+        defaultValue={defaults.tutorHintMode}
+        error={errors.tutorHintMode}
+      />
+      <ChoiceGroup
         legend="Text size"
         description="Makes all text in the learning app larger."
         name="textScale"
@@ -99,6 +113,12 @@ export function PreferencesForm({ defaults }: { defaults: PreferencesView }) {
           label="Show streaks, points and badges"
           hint="Turn off if they distract you. Your progress and reviews are not affected."
           defaultChecked={defaults.gamificationEnabled}
+        />
+        <Toggle
+          name="aiContextSharing"
+          label="Let the AI tutor use my learning history"
+          hint="Shares only what's relevant: recent answers, open mistakes, saved words, progress counts and notes you've confirmed. Off by default."
+          defaultChecked={defaults.aiContextSharing}
         />
       </fieldset>
       <SaveRow pending={pending} state={state} label="Save preferences" />

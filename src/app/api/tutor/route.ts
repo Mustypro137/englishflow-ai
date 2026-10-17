@@ -43,7 +43,8 @@ export async function POST(request: Request) {
   if (!request.headers.get("content-type")?.includes("application/json")) return errorResponse("bad_request");
 
   const user = await getSessionUser();
-  if (!user) return Response.json({ error: { kind: "unauthorized", message: "Please sign in again." } }, { status: 401 });
+  if (!user)
+    return Response.json({ error: { kind: "unauthorized", message: "Please sign in again." } }, { status: 401 });
 
   const parsed = body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return errorResponse("bad_request");

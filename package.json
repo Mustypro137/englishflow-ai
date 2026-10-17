@@ -18,7 +18,8 @@
     "db:deploy": "node scripts/check-env.mjs DIRECT_URL DATABASE_URL && prisma migrate deploy",
     "db:studio": "prisma studio",
     "test:integration": "vitest run --project integration",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "check:bundle": "node scripts/check-client-bundle.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.130.0",

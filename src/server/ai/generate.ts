@@ -31,7 +31,8 @@ function lessonNotes(body: unknown): string {
   const lines: string[] = [];
   for (const b of parsed.data) {
     if (b.type === "rule") lines.push(`Rule: ${b.title ? `${b.title}. ` : ""}${b.text}`);
-    if (b.type === "mistakes") for (const m of b.items) lines.push(`Common mistake: "${m.wrong}" → "${m.right}" (${m.why})`);
+    if (b.type === "mistakes")
+      for (const m of b.items) lines.push(`Common mistake: "${m.wrong}" → "${m.right}" (${m.why})`);
   }
   return lines.join("\n").replaceAll("**", "").slice(0, 2500);
 }

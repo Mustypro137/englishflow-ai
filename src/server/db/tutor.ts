@@ -129,7 +129,13 @@ export async function loadContextRecords(userId: string, lessonSlug: string | nu
     attempts: attempts.flatMap((a) => {
       const g = graded.get(a.exerciseId);
       return g
-        ? [{ objective: g.exercise.objective, answer: describeResponse(g.exercise, a.response), isCorrect: a.isCorrect }]
+        ? [
+            {
+              objective: g.exercise.objective,
+              answer: describeResponse(g.exercise, a.response),
+              isCorrect: a.isCorrect,
+            },
+          ]
         : [];
     }),
     mistakes: mistakes.map((m) => ({

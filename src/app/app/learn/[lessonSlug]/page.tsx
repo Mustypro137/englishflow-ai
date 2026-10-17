@@ -110,6 +110,24 @@ export default async function LessonPage({ params }: PageProps<"/app/learn/[less
             and a topic counts as mastered once you answer it correctly from memory on two separate days.
           </p>
         </Section>
+
+        <Section id="help" title="Need more help?">
+          <ul className="space-y-2 text-sm">
+            <li>
+              <Link href={`/app/tutor?lesson=${lesson.slug}`} className="text-primary font-medium underline">
+                Ask the AI tutor about this lesson
+              </Link>
+            </li>
+            {lesson.concepts.map((c) => (
+              <li key={c.slug}>
+                <Link href={`/app/practice/more?concept=${c.slug}`} className="text-primary font-medium underline">
+                  More practice: {c.name}
+                </Link>{" "}
+                <span className="text-muted">(AI-generated)</span>
+              </li>
+            ))}
+          </ul>
+        </Section>
       </Container>
     </LessonProgressProvider>
   );

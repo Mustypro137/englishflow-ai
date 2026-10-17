@@ -32,8 +32,8 @@ export function ExerciseCard({
   onProgress?: (p: LessonProgressSummary) => void;
   /** Called with each graded result (first and later tries). */
   onResult?: (r: GradeResult, independent: boolean) => void;
-  /** "practice" for mixed practice of lessons already studied. */
-  context?: "lesson" | "practice";
+  /** "practice" for mixed practice of lessons already studied, "generated" for AI-generated practice. */
+  context?: "lesson" | "practice" | "generated";
 }) {
   const idPrefix = useId();
   const hydrated = useHydrated();
@@ -67,7 +67,7 @@ export function ExerciseCard({
         return;
       }
       setResult(res.result);
-      onProgress?.(res.progress);
+      if (res.progress) onProgress?.(res.progress);
       onResult?.(res.result, !hintShown && !everRevealed);
     });
   }

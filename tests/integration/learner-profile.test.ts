@@ -94,6 +94,8 @@ describe("learner profile repository", () => {
       textScale: "x_large",
       reducedMotion: true,
       gamificationEnabled: false,
+      tutorHintMode: "direct",
+      aiContextSharing: true,
     });
     expect(await getProfile(user.id)).toMatchObject({ displayName: "Benjamin", nativeLanguage: "Yoruba", goals: [] });
     expect(await getPreferences(user.id)).toEqual({
@@ -103,6 +105,8 @@ describe("learner profile repository", () => {
       textScale: "x_large",
       reducedMotion: true,
       gamificationEnabled: false,
+      tutorHintMode: "direct",
+      aiContextSharing: true,
     });
   });
 });
@@ -122,6 +126,8 @@ describe("learner data isolation", () => {
       textScale: "large",
       reducedMotion: true,
       gamificationEnabled: true,
+      tutorHintMode: "guided",
+      aiContextSharing: true,
     });
 
     expect((await getProfile(a.id))?.displayName).toBe("A changed");

@@ -81,6 +81,7 @@ describe("getNavModules", () => {
       "grammar",
       "vocabulary",
       "challenges",
+      "tutor",
       "notebook",
       "mistakes",
       "calendar",
