@@ -21,9 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import type { MasteryStateName } from "@/lib/learning/mastery";
+import { SKILL_NAMES, STATE_LABEL } from "@/lib/learning/labels";
 import { nextLesson, recommend } from "@/lib/learning/recommend/engine";
-import type { SkillName } from "@/lib/learning/snapshot";
 import { GOALS } from "@/lib/validation/profile";
 import { requireUser } from "@/server/auth/session";
 import { getDashboard } from "@/server/db/activity";
@@ -34,24 +33,6 @@ import { getReviewOverview } from "@/server/db/reviews";
 import { getCurrentSession } from "@/server/db/sessions";
 
 export const metadata: Metadata = { title: "Today" };
-
-const SKILL_NAMES: Record<SkillName, string> = {
-  grammar: "Grammar",
-  vocabulary: "Vocabulary",
-  listening: "Listening",
-  reading: "Reading",
-  writing: "Writing",
-  pronunciation: "Pronunciation",
-  sentence_construction: "Sentence building",
-  functional_communication: "Everyday communication",
-};
-
-const STATE_LABEL: Record<MasteryStateName, string> = {
-  new: "Not started",
-  learning: "Learning",
-  practicing: "Practising",
-  mastered: "Mastered",
-};
 
 const card = "border-border bg-surface rounded-lg border p-5 sm:p-6";
 const cardHeading = "text-ink text-lg font-semibold";
@@ -255,11 +236,14 @@ export default async function TodayPage() {
                   without help, with high recent accuracy. A wrong review moves it back to practising.
                 </li>
                 <li>
-                  Only topics with a written lesson are counted. Listening, reading and speaking aren&apos;t measured
-                  yet.
+                  Only topics with a written lesson are counted. Listening and reading accuracy and speaking practice
+                  are shown on the Progress page.
                 </li>
               </ul>
             </details>
+            <Link href="/app/progress" className={`${buttonClasses({ variant: "ghost", size: "sm" })} mt-2`}>
+              See detailed progress
+            </Link>
           </section>
 
           <section aria-labelledby="mistakes-heading" className={card}>

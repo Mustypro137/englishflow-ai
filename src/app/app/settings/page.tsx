@@ -1,6 +1,8 @@
+import { Download } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { buttonClasses } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { requireUser } from "@/server/auth/session";
 import { getPreferences, getProfile } from "@/server/db/learner-profile";
@@ -40,6 +42,17 @@ export default async function SettingsPage() {
         <Link href="/app/settings/memory" className="text-primary text-sm font-medium underline">
           Manage saved learning context
         </Link>
+      </Section>
+
+      <Section id="data" title="Your data">
+        <p className="text-muted text-sm">
+          Download everything EnglishFlow AI stores about you — your profile, progress, answers, notes, writing and
+          tutor conversations — as one JSON file.
+        </p>
+        <a href="/api/export" download className={buttonClasses({ variant: "secondary" })}>
+          <Download aria-hidden />
+          Download my data
+        </a>
       </Section>
 
       <Section id="account" title="Account">

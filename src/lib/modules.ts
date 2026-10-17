@@ -226,7 +226,7 @@ export const LEARNER_MODULES: readonly LearnerModule[] = [
     icon: "progress",
     group: "support",
     milestone: 8,
-    status: "planned",
+    status: "available",
   },
   {
     id: "calendar",
