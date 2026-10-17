@@ -78,7 +78,7 @@ describe("curriculum seed", () => {
     const before = await count();
     const summary = await seedCurriculum(prisma, content);
     expect(await count()).toEqual(before);
-    expect(summary).toMatchObject({ publishedLessons: 8, exercises: 81, placementItems: 30, archived: 0 });
+    expect(summary).toMatchObject({ publishedLessons: 8, exercises: 81, placementItems: 36, archived: 0 });
   }, 180_000);
 });
 
@@ -108,8 +108,14 @@ describe("curriculum reads", () => {
 
   it("returns placement questions without their levels", async () => {
     const qs = await getPlacementQuestions();
-    expect(qs).toHaveLength(30);
+    expect(qs).toHaveLength(36);
     expect(qs.map((q) => q.section).slice(0, 1)).toEqual(["grammar"]);
+    // Listening comes last and carries its audio (words + voice) for the device to play.
+    const listening = qs.filter((q) => q.section === "listening");
+    expect(listening).toHaveLength(6);
+    expect(qs.slice(-6)).toEqual(listening);
+    expect(listening.every((q) => q.audio && q.audio.length > 0)).toBe(true);
+    expect(qs.filter((q) => q.section !== "listening").every((q) => q.audio === null)).toBe(true);
     expect(JSON.stringify(qs)).not.toMatch(/"(level|placementLevel|correct)"/);
   });
 });
@@ -238,7 +244,8 @@ describe("placement", () => {
       ["reading", "B2", true],
     ]);
     expect(outcome.estimate.overall).toBe("C2");
-    expect(await prisma.exerciseAttempt.count({ where: { userId: user.id, context: "placement" } })).toBe(30);
+    expect(outcome.estimate.listening).toMatchObject({ level: "B1", atCeiling: true });
+    expect(await prisma.exerciseAttempt.count({ where: { userId: user.id, context: "placement" } })).toBe(36);
     expect(await prisma.conceptProgress.count({ where: { userId: user.id } })).toBe(0);
 
     await chooseStartingLevel(user.id, outcome.resultId, "C2");

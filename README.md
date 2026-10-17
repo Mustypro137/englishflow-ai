@@ -2,8 +2,8 @@
 
 An English-learning platform for learners from A1 (beginner) to C2 (proficient). It combines structured lessons, active recall, spaced repetition, skill practice and an AI tutor, with the goal of **independent ability**: understanding English, remembering it and producing it without help.
 
-> **Status: Milestones 1–4 of 8 complete. Live at https://englishflow-ai.vercel.app**
-> Accounts, a structured A1–C2 curriculum with **8 complete A1 lessons**, server-graded exercises, a placement check, **spaced-repetition reviews**, **48 A1 vocabulary words**, a notebook, a mistake tracker, a **Today dashboard with explained recommendations**, a study planner and challenges, and an **AI tutor** with AI-generated practice. The AI parts need an Anthropic API key; without one they show a clear setup message and everything else keeps working. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
+> **Status: Milestones 1–7 of 8 complete. Live at https://englishflow-ai.vercel.app**
+> Accounts, a structured A1–C2 curriculum with **8 complete A1 lessons**, server-graded exercises, a placement check (now with listening), **spaced-repetition reviews**, **48 A1 vocabulary words**, a notebook, a mistake tracker, a **Today dashboard with explained recommendations**, a study planner and challenges, an **AI tutor** with AI-generated practice, and **skill labs**: listening, reading, writing, a sentence studio, pronunciation and conversation role-plays. The AI parts need an Anthropic API key; without one they show a clear setup message and everything else keeps working. See [Completed features](#completed-features) and [Known limitations](#known-limitations).
 
 ## Run it on your computer
 
@@ -44,7 +44,9 @@ Without an email provider configured, verification and password-reset emails are
 | `npm run lint` / `typecheck` / `format:check` | Code checks |
 | `npm test` | Unit tests (no database needed) |
 | `npm run test:integration` | Database tests. They use an isolated `englishflow_test` schema and never touch your development data. |
-| `npm run test:e2e` | Browser tests at desktop and phone sizes, with automated accessibility checks. Run `npm run build` first; first time, `npx playwright install chromium`. They create throwaway `e2e+…@example.test` accounts in your development database and delete them afterwards. |
+| `npm run test:e2e` | Browser tests at desktop and phone sizes, with automated accessibility checks. Run `npm run build` first; first time, `npx playwright install chromium`. They use an isolated `englishflow_e2e` schema and start two servers: one like a site with no AI key or audio files, and one with a deterministic **test-only** AI provider and fixture audio (`ALLOW_MOCK_AI=1`, refused on Vercel). |
+| `npm run audio:plan` | Show which audio clips would be generated and how many characters (no cost, no keys needed) |
+| `npm run audio:generate` | Generate missing or changed clips with a TTS provider, upload them to Vercel Blob and update `content/audio/manifest.json` (needs `TTS_PROVIDER`, `OPENAI_API_KEY`, `BLOB_READ_WRITE_TOKEN`) |
 | `npm run db:migrate` | Create a new migration after changing `prisma/schema.prisma` (development only) |
 | `npm run db:deploy` | Apply migrations (used in production too) |
 | `npm run db:seed` | Load or update curriculum content from `content/` (idempotent; restart a running server afterwards to see changes) |
@@ -90,6 +92,17 @@ e2e/                         Playwright browser and accessibility tests
 - [docs/DEPLOYMENT_PLAN.md](docs/DEPLOYMENT_PLAN.md): hosting on Vercel + Neon, environment variables, costs
 
 ## Completed features
+
+**Milestone 7: skill labs.** Content is A1 and A2, written with AI assistance and awaiting teacher review.
+- **Audio, honestly.** A clip plays from a pre-generated file only while the file's hash still matches the current words (`content/audio/manifest.json`). Otherwise the page uses the device's own English computer voice; if the device has none, there is **no play button at all** and the transcript is shown instead. Every player says where its sound comes from. `npm run audio:generate` creates files with a TTS provider and uploads them to Vercel Blob (preview with `npm run audio:plan`: 212 files, about 6,000 characters for all current content).
+- **Listening** (`/app/listening`, 8 items): listen first (as often as you like, with a slower option), answer gist and detail questions graded on the server, then the transcript with useful phrases highlighted, replay by line, and **dictation** with a word-by-word comparison (contractions, capitals, punctuation and small numbers don't count as errors; one-letter slips are flagged as spelling). Without audio it becomes reading practice and says so.
+- **Reading** (`/app/reading`, 8 graded texts): comprehension, inference and vocabulary-in-context questions. Glossary words link to definitions and can be **saved with the sentence they came from** (as a saved word when it's in the vocabulary, otherwise as a flashcard) and come back in review.
+- **Writing** (`/app/writing`, 9 tasks plus a journal): drafts with a live word count; **three-layer AI feedback** (correctness, naturalness, optional style) that keeps your meaning. Every suggestion must quote words you actually wrote, or it's discarded. **Rewrite** as a new version and see what changed. Each task has a self-check list and a model answer, so it's useful without AI too.
+- **Sentence studio** (`/app/sentences`): word-order and transformation exercises from lessons you've started; expand a sentence step by step (checked for structure: it must keep its words and grow); write your own sentences with a pattern (checked for the pattern, then saved to your writing for feedback).
+- **Pronunciation** (`/app/pronunciation`): five minimal-pair sets, word stress and question intonation, with model audio. "Which word do you hear?" when audio is available, and a sound-and-spelling quiz that needs none. **Optional recording** stays on the device (never uploaded) for self-comparison. Optional browser speech recognition shows a transcript, clearly labelled **transcription, not a pronunciation score**, with a note that some browsers send the audio to their maker. The microphone is requested only when you choose to record, after an explanation. **Every speaking task has a text alternative**, and nothing else depends on speaking.
+- **Conversation** (`/app/conversation`, 6 scenarios): goals, useful phrases and a full example conversation (with "cover my lines" practice) work without AI. With AI, the tutor plays the other person, stays in role, adds a short tip for mistakes that matter, and gives feedback at the end. Replies can be read aloud by the device voice.
+- **Placement** adds a listening part (6 clips, A1–B1) when the device can play audio. It's reported separately and doesn't change the suggested starting level.
+- Lab answers count as study activity and skill practice, never as grammar mastery or lesson progress. The study planner's 6 minutes now go to a listening or reading item (whichever you've done less this week), and recommendations suggest listening or reading when your goals need it.
 
 **Milestone 6: AI tutor, saved learning context, AI-generated practice.** Needs `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` on the server; without them every AI feature says plainly that it isn't set up.
 - **AI tutor** (`/app/tutor`): saved conversations in 12 modes (explain, understand a sentence, conversation, correct my writing, vocabulary, quiz, help me remember, listening as a transcript, build sentences, challenge, explain my mistakes, review my learning). Replies stream in and are shown as safe, limited Markdown (no HTML). Concise or detailed answers per message; hint-first, guided or direct answers set in Settings. Every lesson links to it.
@@ -148,9 +161,11 @@ e2e/                         Playwright browser and accessibility tests
 - Only A1 has lessons (8 of 12 planned). A2–C2 are outlines.
 - **The AI tutor and generated practice only work once an Anthropic API key is configured** (see `.env.example`). Using them costs money per request; per-learner limits are set with `AI_DAILY_TOKEN_BUDGET_PER_USER` and `AI_REQUESTS_PER_MINUTE_PER_USER`.
 - AI replies can be wrong. The tutor says so on the page, and generated exercises are checked automatically but not by a teacher. Answers to generated exercises don't count towards streaks, challenges or mastery.
-- Challenge and "Use it" writing is counted or self-checked, not corrected by AI yet (the tutor's "Correct my writing" mode can do this on request; built-in writing feedback is Milestone 7).
-- The tutor's "listening" mode works with written transcripts only; there is no audio yet (Milestone 7).
-- Listening, reading, speaking and pronunciation are not taught or measured yet (Milestone 7); the planner uses vocabulary time instead.
+- Challenge and "Use it" writing is counted or self-checked. AI feedback is in the writing workshop (needs an API key).
+- **No audio files have been generated yet.** Until `npm run audio:generate` is run with a TTS provider, audio comes from the device's own computer voice (quality varies; some browsers, often on Linux, have none, and then the text version is shown). The generation script hasn't been run against a real TTS provider yet.
+- Pronunciation is **never scored**: no pronunciation-assessment service is connected. Browser speech recognition, where offered, is a rough transcription and may send audio to the browser maker.
+- Skill-lab content covers A1–A2 only. The listening placement part measures only up to B1 and is kept separate from the starting level.
+- Speaking is practised alone (recording for self-comparison); role-plays are typed, with optional read-aloud.
 - Vocabulary covers A1 only (48 words) and, like the lessons, awaits review by an English teacher.
 - Reviews ask exercises exactly as in the lesson. AI-generated practice offers new questions, but it isn't part of the review schedule.
 - The application ("Use it") task is self-checked and not saved.

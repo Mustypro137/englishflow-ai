@@ -233,7 +233,7 @@ interface AiProvider {
 `LearnerMemory` rows are separate from chat messages, visible on a settings page, editable and deletable. AI-proposed memories are stored as `verified = false` and aren't treated as fact until confirmed by assessment evidence or by the learner.
 
 ## 8. Audio, listening and pronunciation (Milestone 7 design)
-- Curriculum audio is **pre-generated** by a script (`scripts/generate-audio.ts`) using a TTS provider and uploaded to object storage. The audio URL is stored on the content record.
+- Curriculum audio is **pre-generated** by a script (`scripts/generate-audio.ts`) using a TTS provider and uploaded to object storage. URLs and a hash of the words and voice are kept in `content/audio/manifest.json`; a file is used only while its hash matches the current content. Without a file, the browser's own English speech voice is used (labelled), and with neither no play control is shown.
 - The UI renders an audio player **only** when a real audio file exists. Transcripts are always available for accessibility.
 - Pronunciation v1: model audio, minimal pairs, learner record-and-playback for self-comparison, optional speech-to-text with a transcript comparison. Clearly labelled **"transcription, not pronunciation scoring."** Microphone permission is requested only when the learner starts a speaking activity, with an explanation. Recordings aren't stored unless the learner opts in.
 - Phoneme-level scoring only if a service that supports it (for example, Azure Speech Pronunciation Assessment) is configured.
