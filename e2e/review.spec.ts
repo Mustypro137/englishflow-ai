@@ -111,13 +111,16 @@ test("a wrong lesson answer appears in the mistake tracker with the correction",
   await expect(page.getByRole("heading", { name: "No mistakes recorded yet" })).toBeVisible();
 });
 
-test("the home page shows reviews that are due", async ({ page }) => {
+test("the Today page shows reviews that are due", async ({ page }) => {
   await newLearner(page);
   await page.goto("/app/vocabulary");
   await page.getByRole("button", { name: "Save “key” to my words" }).click();
   await expect(page.getByRole("button", { name: "Remove “key” from my words" })).toBeVisible();
   await page.goto("/app");
-  await expect(page.getByRole("heading", { name: "1 review due now" })).toBeVisible();
-  await page.getByRole("link", { name: "Start reviewing" }).click();
+  const reviews = page.getByRole("region", { name: "Reviews" });
+  await expect(reviews.getByText("1", { exact: true })).toBeVisible();
+  await expect(reviews.getByText("due now")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Recommended for you" })).toContainText("Review 1 item");
+  await reviews.getByRole("link", { name: "Start reviewing" }).click();
   await expect(page).toHaveURL(/\/app\/review$/);
 });

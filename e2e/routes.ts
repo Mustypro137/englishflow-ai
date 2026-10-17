@@ -23,4 +23,9 @@ export const APP_ROUTES = [
   "/app/vocabulary",
   "/app/notebook",
   "/app/mistakes",
+  "/app/session",
+  "/app/challenges",
+  "/app/practice",
+  "/app/grammar",
+  "/app/calendar",
 ] as const;
