@@ -44,6 +44,17 @@ describe("checkTextAnswer", () => {
     expect(checkTextAnswer("do not", multi).status).toBe("correct");
   });
 
+  it("treats contractions and full forms as equal, even before punctuation", () => {
+    const sentences = { accepted: ["No, it is not. It is Monday"] };
+    expect(checkTextAnswer("No, it isn't. It's Monday.", sentences).status).toBe("correct");
+    expect(checkTextAnswer("I'm Ana! You're Tom?", { accepted: ["I am Ana! You are Tom"] }).status).toBe("correct");
+  });
+
+  it("keeps contractions distinct when the exercise asks for it", () => {
+    const strict = { accepted: ["do not"], contractionsEquivalent: false };
+    expect(checkTextAnswer("don't", strict).status).toBe("incorrect");
+  });
+
   it("does not accept a partial match", () => {
     expect(checkTextAnswer("goe", spec).status).toBe("incorrect");
   });

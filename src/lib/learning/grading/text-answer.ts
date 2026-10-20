@@ -77,7 +77,7 @@ export function expandContractions(normalized: string): string {
   return normalized
     .split(" ")
     .map((word) => {
-      const m = word.match(/^([a-z']+)([,;:]?)$/);
+      const m = word.match(/^([a-z']+)([,;:.!?]?)$/);
       if (!m) return word;
       return (CONTRACTIONS[m[1]] ?? m[1]) + m[2];
     })
