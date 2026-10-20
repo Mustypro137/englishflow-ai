@@ -12,7 +12,9 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
   await completeOnboarding(page, { minutes: "30", level: /A2 — Elementary/ });
 
   await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
-  await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Today's plan" }).getByText("Built around your 30-minute goal"),
+  ).toBeVisible();
   await expect(page.getByText(/Working level: A2/)).toBeVisible();
   await expect(page.getByText("your own estimate", { exact: true })).toBeVisible();
 
@@ -22,7 +24,9 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
 
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
-  await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Today's plan" }).getByText("Built around your 30-minute goal"),
+  ).toBeVisible();
 });
 
 test("signed-out visitors are sent to sign in, then back to where they were going", async ({ page }) => {
@@ -166,7 +170,9 @@ test("each learner sees only their own details", async ({ browser }, testInfo) =
 
   await a.reload();
   await expect(a.getByRole("heading", { level: 1, name: greeting("Learner Alpha") })).toBeVisible();
-  await expect(a.getByRole("definition").filter({ hasText: "10 minutes" })).toBeVisible();
+  await expect(
+    a.getByRole("region", { name: "Today's plan" }).getByText("Built around your 10-minute goal"),
+  ).toBeVisible();
   await expect(a.getByText("Learner Beta")).toHaveCount(0);
 
   await b.goto("/app/settings");
