@@ -1,4 +1,4 @@
-import { ChartLine } from "lucide-react";
+import { Award, ChartLine } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +6,11 @@ import { buttonClasses } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProgressBar } from "@/components/ui/progress-bar";
+import type { Achievement } from "@/lib/learning/achievements";
 import { ACTIVITY_WEEKS, MIN_SAMPLE, RECENT_DAYS, type Rate, WEAK_ACCURACY } from "@/lib/learning/analytics";
 import { SKILL_NAMES, STATE_LABEL } from "@/lib/learning/labels";
 import { requireLearner } from "@/server/labs/guard";
+import { getDashboard } from "@/server/db/activity";
 import { getProgressAnalytics } from "@/server/db/analytics";
 
 export const metadata: Metadata = { title: "Progress" };
@@ -32,7 +34,7 @@ function Percent({ rate, unit = "answers" }: { rate: Rate; unit?: string }) {
 
 export default async function ProgressPage() {
   const { user, profile } = await requireLearner();
-  const data = await getProgressAnalytics(user.id);
+  const [data, dashboard] = await Promise.all([getProgressAnalytics(user.id), getDashboard(user.id)]);
 
   return (
     <Container className="space-y-8 py-10">
@@ -69,6 +71,10 @@ export default async function ProgressPage() {
           <ConceptsSection concepts={data.concepts} timeZone={profile.timezone} />
         </>
       )}
+
+      {dashboard.gamification ? (
+        <AchievementsSection achievements={dashboard.achievements} timeZone={profile.timezone} />
+      ) : null}
 
       <section aria-labelledby="measures-heading" className={card}>
         <h2 id="measures-heading" className={cardHeading}>
@@ -320,6 +326,36 @@ function ConceptsSection({ concepts, timeZone }: { concepts: Analytics["concepts
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function AchievementsSection({ achievements, timeZone }: { achievements: Achievement[]; timeZone: string }) {
+  const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone });
+  return (
+    <section aria-labelledby="achievements-heading" className={card}>
+      <div className="flex items-center gap-2">
+        <Award aria-hidden className="text-primary size-5" />
+        <h2 id="achievements-heading" className={cardHeading}>
+          Achievements
+        </h2>
+      </div>
+      {achievements.length > 0 ? (
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {achievements.map((a) => (
+            <li key={a.id} className="text-sm">
+              <p className="text-ink font-medium">{a.title}</p>
+              <p className="text-muted">
+                {a.description} · {dateFmt.format(a.earnedAt)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted mt-3 text-sm">
+          Achievements are earned from real milestones, like finishing a lesson or remembering a topic in review.
+        </p>
       )}
     </section>
   );

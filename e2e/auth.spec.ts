@@ -2,13 +2,16 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, newLearner, newSession, signIn, signOut, signUp } from "./helpers";
 
+/** The Today page greets by local time of day. */
+const greeting = (name: string) => new RegExp(`^Good (morning|afternoon|evening), ${name}$`);
+
 test("sign up, onboard, sign out, sign in — and saved choices persist", async ({ page }) => {
   const learner = await signUp(page);
 
   await expect(page.getByRole("heading", { level: 1, name: "Set up your learning" })).toBeVisible();
   await completeOnboarding(page, { minutes: "30", level: /A2 — Elementary/ });
 
-  await expect(page.getByRole("heading", { level: 1, name: `Welcome, ${learner.name}` })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
   await expect(page.getByText(/Working level: A2/)).toBeVisible();
   await expect(page.getByText("your own estimate", { exact: true })).toBeVisible();
@@ -18,7 +21,7 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
   await expect(page).toHaveURL(/\/app$/);
 
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: `Welcome, ${learner.name}` })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
   await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
 });
 
@@ -162,7 +165,7 @@ test("each learner sees only their own details", async ({ browser }, testInfo) =
   await completeOnboarding(b, { minutes: "60" });
 
   await a.reload();
-  await expect(a.getByRole("heading", { level: 1, name: "Welcome, Learner Alpha" })).toBeVisible();
+  await expect(a.getByRole("heading", { level: 1, name: greeting("Learner Alpha") })).toBeVisible();
   await expect(a.getByRole("definition").filter({ hasText: "10 minutes" })).toBeVisible();
   await expect(a.getByText("Learner Beta")).toHaveCount(0);
 

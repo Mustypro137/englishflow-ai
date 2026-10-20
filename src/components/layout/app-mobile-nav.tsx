@@ -2,7 +2,7 @@
 
 import { Ellipsis, X } from "lucide-react";
 import { Dialog } from "radix-ui";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { LearnerModule } from "@/lib/modules";
 import { ModuleIcon } from "./module-icon";
@@ -12,7 +12,16 @@ const itemClass =
   "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs text-muted hover:text-ink";
 
 /** Bottom navigation for small screens: up to four primary modules plus a "More" sheet. */
-export function AppMobileNav({ primary, more }: { primary: LearnerModule[]; more: LearnerModule[] }) {
+export function AppMobileNav({
+  primary,
+  more,
+  reviewBadge,
+}: {
+  primary: LearnerModule[];
+  more: LearnerModule[];
+  /** Due-review count, shown on the Review item wherever it is. */
+  reviewBadge: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -26,7 +35,10 @@ export function AppMobileNav({ primary, more }: { primary: LearnerModule[]; more
               className={itemClass}
               activeClassName="font-medium text-primary"
             >
-              <ModuleIcon name={m.icon} className="size-5" />
+              <span className="relative">
+                <ModuleIcon name={m.icon} className="size-5" />
+                {m.id === "review" ? <span className="absolute -top-2 left-3.5">{reviewBadge}</span> : null}
+              </span>
               {m.label}
             </NavLink>
           </li>
@@ -62,6 +74,7 @@ export function AppMobileNav({ primary, more }: { primary: LearnerModule[]; more
                         >
                           <ModuleIcon name={m.icon} className="size-4" />
                           {m.label}
+                          {m.id === "review" ? <span className="ml-auto">{reviewBadge}</span> : null}
                         </NavLink>
                       </li>
                     ))}

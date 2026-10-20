@@ -13,9 +13,18 @@ const sideLinkActive = "bg-primary-soft font-medium text-primary-hover";
 /**
  * Learner application frame. Navigation is generated from the module registry
  * and contains only modules that are available. `account` is rendered inside a
- * Suspense boundary by the layout because it reads the session.
+ * Suspense boundary by the layout because it reads the session; so is `reviewBadge`,
+ * the due-review count shown on the Review link.
  */
-export function AppShell({ children, account }: { children: ReactNode; account: ReactNode }) {
+export function AppShell({
+  children,
+  account,
+  reviewBadge,
+}: {
+  children: ReactNode;
+  account: ReactNode;
+  reviewBadge: ReactNode;
+}) {
   const modules = getNavModules();
   const groups = groupModules(modules);
   const mobile = splitMobileNav(modules);
@@ -41,6 +50,7 @@ export function AppShell({ children, account }: { children: ReactNode; account: 
                     >
                       <ModuleIcon name={m.icon} className="size-4" />
                       {m.label}
+                      {m.id === "review" ? <span className="ml-auto">{reviewBadge}</span> : null}
                     </NavLink>
                   </li>
                 ))}
@@ -68,7 +78,7 @@ export function AppShell({ children, account }: { children: ReactNode; account: 
         {children}
       </main>
 
-      <AppMobileNav primary={mobile.primary} more={mobile.more} />
+      <AppMobileNav primary={mobile.primary} more={mobile.more} reviewBadge={reviewBadge} />
     </div>
   );
 }
