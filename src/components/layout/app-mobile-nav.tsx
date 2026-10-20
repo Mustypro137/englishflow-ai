@@ -9,7 +9,7 @@ import { ModuleIcon } from "./module-icon";
 import { NavLink } from "./nav-link";
 
 const itemClass =
-  "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs text-muted hover:text-ink";
+  "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-1 text-xs text-muted hover:text-ink";
 
 /** Bottom navigation for small screens: up to four primary modules plus a "More" sheet. */
 export function AppMobileNav({
@@ -35,11 +35,10 @@ export function AppMobileNav({
               className={itemClass}
               activeClassName="font-medium text-primary"
             >
-              <span className="relative">
-                <ModuleIcon name={m.icon} className="size-5" />
-                {m.id === "review" ? <span className="absolute -top-2 left-3.5">{reviewBadge}</span> : null}
-              </span>
+              <ModuleIcon name={m.icon} className="size-5" />
               {m.label}
+              {/* After the label so the link reads "Review 1 due"; drawn over the icon's corner. */}
+              {m.id === "review" ? <span className="absolute top-px left-1/2 ml-1">{reviewBadge}</span> : null}
             </NavLink>
           </li>
         ))}
