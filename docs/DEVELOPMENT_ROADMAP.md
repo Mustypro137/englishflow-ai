@@ -1,6 +1,6 @@
 # EnglishFlow AI — Development Roadmap
 
-_Last updated 2026-10-17. Milestones 1–7 complete; Milestone 8 not started. Deployed at https://englishflow-ai.vercel.app._
+_Last updated 2026-10-20. Milestones 1–7 complete; Milestone 8 implemented, in review ([PR #1](https://github.com/Mustypro137/englishflow-ai/pull/1)). Deployed at https://englishflow-ai.vercel.app._
 
 The milestones follow master prompt §21. Each one is a **coherent, usable increment**: implement → run tests → inspect the running app → fix → document limitations, then move on. "Smaller and working" beats "broad and incomplete".
 
@@ -230,6 +230,8 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 **Tests:** complete §20 acceptance suite (all 15) in CI, including #13 (mobile/desktop), #14 (keyboard), #15 (empty/loading/error states).
 
 **Completion criteria:** every item in the production-ready checklist is checked.
+
+**Status: 🟡 implemented, in review (2026-10-20).** Delivered: progress analytics, JSON data export, Sentry with scrubbing (off until a DSN is set), security headers and CSP, an authorization sweep across learner routes, keyboard, states and security browser tests; plus a **dark theme** (Theme setting: same as my device, light or dark; dark tokens checked for WCAG AA contrast; one additive migration, `colorTheme`), a **redesigned homepage**, and contractions accepted before sentence punctuation. Verified so far: lint, typecheck, Prettier check, 274 unit tests, 74 integration tests, a production build, and the browser tests for the new work (theme setting, dark-theme axe on every public page and every signed-in page on desktop, homepage exercise and axe, desktop and phone). The dark-theme sweep of signed-in pages on the phone timed out locally (slow database from Nigeria; no violations before the timeout) and the full Playwright suite hasn't been rerun; both are left to CI on the PR. **Still open before this milestone is complete:** CI green and merge, the `colorTheme` migration on production, a manual screen-reader pass (NVDA or VoiceOver), and the external setup items in the README (Sentry DSN, Resend email).
 
 **Acceptance checks → automated tests** (numbering as used by the milestones above; all run in CI):
 
