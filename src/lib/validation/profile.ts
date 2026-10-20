@@ -41,6 +41,12 @@ export const TEXT_SCALES = [
   { value: "x_large", label: "Extra large" },
 ] as const;
 
+export const COLOR_THEMES = [
+  { value: "system", label: "Same as my device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+] as const;
+
 export function isValidTimeZone(tz: string): boolean {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: tz });
@@ -93,6 +99,7 @@ export const preferencesUpdateSchema = z.object({
   translationSupport: checkbox,
   textScale: z.enum(["normal", "large", "x_large"]),
   reducedMotion: checkbox,
+  colorTheme: z.enum(["system", "light", "dark"]),
   gamificationEnabled: checkbox,
   tutorHintMode: z.enum(["hint_first", "guided", "direct"]),
   aiContextSharing: checkbox,

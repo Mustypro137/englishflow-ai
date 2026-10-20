@@ -17,6 +17,7 @@ export type PreferencesView = Pick<
   | "translationSupport"
   | "textScale"
   | "reducedMotion"
+  | "colorTheme"
   | "gamificationEnabled"
   | "tutorHintMode"
   | "aiContextSharing"
@@ -28,6 +29,7 @@ export const DEFAULT_PREFERENCES: PreferencesView = {
   translationSupport: true,
   textScale: "normal",
   reducedMotion: false,
+  colorTheme: "system",
   gamificationEnabled: true,
   tutorHintMode: "hint_first",
   aiContextSharing: false,
@@ -46,6 +48,7 @@ export async function getPreferences(userId: string): Promise<PreferencesView> {
     translationSupport,
     textScale,
     reducedMotion,
+    colorTheme,
     gamificationEnabled,
     tutorHintMode,
     aiContextSharing,
@@ -56,6 +59,7 @@ export async function getPreferences(userId: string): Promise<PreferencesView> {
     translationSupport,
     textScale,
     reducedMotion,
+    colorTheme,
     gamificationEnabled,
     tutorHintMode,
     aiContextSharing,

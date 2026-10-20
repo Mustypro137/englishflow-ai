@@ -43,6 +43,59 @@
   color-scheme: light;
 }
 
+/*
+ * Dark theme: follows the device unless the learner chose Light or Dark in settings
+ * (data-theme on <html>). Same tokens, so every component switches with no extra classes.
+ * Every text color keeps WCAG AA contrast on paper, surface, sunken and its own -soft background.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #12151c;
+    --color-surface: #1a1f29;
+    --color-sunken: #232936;
+    --color-ink: #e8eaef;
+    --color-muted: #a3abba;
+    --color-border: #2e3543;
+    --color-border-strong: #5a6378;
+    --color-primary: #5cbcc1;
+    --color-primary-hover: #7ccdd1;
+    --color-primary-soft: #173a3d;
+    --color-on-primary: #0b1a1b;
+    --color-accent: #f0a35e;
+    --color-accent-soft: #3a2614;
+    --color-success: #62c48a;
+    --color-success-soft: #15301f;
+    --color-danger: #f48a80;
+    --color-danger-soft: #3b1a18;
+    --color-warning: #e3b04b;
+    --color-warning-soft: #352a10;
+    color-scheme: dark;
+  }
+}
+/* Also usable on one section (data-theme="dark" on any element) for a dark band in a light page. */
+[data-theme="dark"] {
+  --color-paper: #12151c;
+  --color-surface: #1a1f29;
+  --color-sunken: #232936;
+  --color-ink: #e8eaef;
+  --color-muted: #a3abba;
+  --color-border: #2e3543;
+  --color-border-strong: #5a6378;
+  --color-primary: #5cbcc1;
+  --color-primary-hover: #7ccdd1;
+  --color-primary-soft: #173a3d;
+  --color-on-primary: #0b1a1b;
+  --color-accent: #f0a35e;
+  --color-accent-soft: #3a2614;
+  --color-success: #62c48a;
+  --color-success-soft: #15301f;
+  --color-danger: #f48a80;
+  --color-danger-soft: #3b1a18;
+  --color-warning: #e3b04b;
+  --color-warning-soft: #352a10;
+  color-scheme: dark;
+}
+
 html[data-text-scale="large"] {
   --text-scale: 1.125;
 }

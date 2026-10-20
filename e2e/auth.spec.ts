@@ -81,18 +81,20 @@ test("onboarding keeps answers and explains the problem when something is missin
   await expect(page).toHaveURL(/\/app\/onboarding$/);
 });
 
-test("settings save, persist after reload, and apply the text size", async ({ page }) => {
+test("settings save, persist after reload, and apply the text size and theme", async ({ page }) => {
   await signUp(page);
   await completeOnboarding(page);
   await page.goto("/app/settings");
 
   await page.getByRole("radio", { name: "Extra large" }).check();
+  await page.getByRole("radio", { name: "Dark", exact: true }).check();
   await page.getByRole("checkbox", { name: /Reduce motion/ }).check();
   await page.getByRole("radio", { name: "60 minutes" }).check();
   await page.getByRole("button", { name: "Save preferences" }).click();
   await expect(page.getByText("Preferences saved.")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-text-scale", "x-large");
   await expect(page.locator("html")).toHaveAttribute("data-reduced-motion", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   await page.getByLabel("Name").fill("Renamed Learner");
   await page.getByRole("button", { name: "Save profile" }).click();
@@ -101,6 +103,7 @@ test("settings save, persist after reload, and apply the text size", async ({ pa
   await page.reload();
   await expect(page.getByRole("radio", { name: "Extra large" })).toBeChecked();
   await expect(page.getByRole("radio", { name: "60 minutes" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Dark", exact: true })).toBeChecked();
   await expect(page.getByLabel("Name")).toHaveValue("Renamed Learner");
   await expect(page.locator("html")).toHaveAttribute("data-text-scale", "x-large");
 });

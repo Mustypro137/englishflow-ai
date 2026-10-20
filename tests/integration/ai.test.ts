@@ -67,6 +67,7 @@ async function createLearner(opts: { sharing?: boolean } = {}) {
       translationSupport: true,
       textScale: "normal",
       reducedMotion: false,
+      colorTheme: "system",
       gamificationEnabled: true,
       tutorHintMode: "hint_first",
       aiContextSharing: true,

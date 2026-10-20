@@ -79,3 +79,26 @@ test("no serious accessibility violations after answering the sample exercise", 
   await expect(page.getByText("Not quite.")).toBeVisible();
   expect(await seriousViolations(page)).toEqual([]);
 });
+
+// Dark theme (from the device setting): same contrast and accessibility checks on every page.
+test.describe("dark theme", () => {
+  test.use({ colorScheme: "dark" });
+
+  test("public pages have no serious accessibility violations", async ({ page }) => {
+    for (const route of PUBLIC_ROUTES) {
+      await page.goto(route);
+      expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
+
+  test("signed-in pages have no serious accessibility violations", async ({ page }) => {
+    test.setTimeout(20_000 + APP_ROUTES.length * 15_000);
+    await signUp(page);
+    await completeOnboarding(page);
+    for (const route of APP_ROUTES) {
+      await page.goto(route);
+      await expect(page.locator("main h1"), route).toBeVisible();
+      expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
+});

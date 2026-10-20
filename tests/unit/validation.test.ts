@@ -69,6 +69,7 @@ describe("preferencesUpdateSchema", () => {
       explanationStyle: "detailed",
       textScale: "large",
       reducedMotion: "on",
+      colorTheme: "dark",
       tutorHintMode: "guided",
     });
     expect(result).toEqual({
@@ -77,6 +78,7 @@ describe("preferencesUpdateSchema", () => {
       textScale: "large",
       translationSupport: false,
       reducedMotion: true,
+      colorTheme: "dark",
       gamificationEnabled: false,
       tutorHintMode: "guided",
       aiContextSharing: false,
