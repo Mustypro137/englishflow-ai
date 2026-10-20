@@ -34,7 +34,7 @@ import { getCurrentSession } from "@/server/db/sessions";
 
 export const metadata: Metadata = { title: "Today" };
 
-const card = "border-border bg-surface rounded-lg border p-5 sm:p-6";
+const card = "border-border bg-surface rounded-xl border p-5 sm:p-6";
 const cardHeading = "text-ink text-lg font-semibold";
 
 export default async function TodayPage() {
@@ -57,12 +57,21 @@ export default async function TodayPage() {
   const goalLabels = GOALS.filter((g) => profile.goals.includes(g.value)).map((g) => g.label);
   const levelLabel = data.levelSource === "placement" ? "estimate from your placement check" : "your own estimate";
   const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: snapshot.timezone });
+  const todayFmt = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: snapshot.timezone,
+  });
 
   return (
     <Container className="space-y-6 py-8 sm:py-10">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-ink text-2xl font-semibold tracking-tight sm:text-3xl">Welcome, {profile.displayName}</h1>
+          <p className="text-muted">{todayFmt.format(now)}</p>
+          <h1 className="text-ink mt-1 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+            Welcome, {profile.displayName}
+          </h1>
           <p className="text-muted mt-2 flex flex-wrap items-center gap-2">
             {snapshot.level ? (
               <>
@@ -76,10 +85,17 @@ export default async function TodayPage() {
             )}
           </p>
         </div>
-        <Link href="/app/session" className={buttonClasses()}>
-          <ListChecks aria-hidden />{" "}
-          {session && !session.completedAt ? "Continue your session" : "Plan a study session"}
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          {data.gamification && data.streak > 0 ? (
+            <p className="bg-accent-soft text-accent flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold">
+              <Flame aria-hidden className="size-4" /> {data.streak}-day streak
+            </p>
+          ) : null}
+          <Link href="/app/session" className={buttonClasses()}>
+            <ListChecks aria-hidden />{" "}
+            {session && !session.completedAt ? "Continue your session" : "Plan a study session"}
+          </Link>
+        </div>
       </header>
 
       {!data.hasActivity ? (
@@ -93,6 +109,69 @@ export default async function TodayPage() {
           </p>
         </section>
       ) : null}
+
+      <section
+        aria-labelledby="objectives-heading"
+        className={`${card} flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:p-8`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Target aria-hidden className="text-primary size-4" />
+            <h2 id="objectives-heading" className="text-primary text-sm font-semibold">
+              Current objectives
+            </h2>
+          </div>
+          {next.lesson ? (
+            <>
+              <p className="text-ink mt-3 font-serif text-2xl font-semibold sm:text-3xl">{next.lesson.title}</p>
+              <p className="text-muted mt-1 text-sm">
+                {next.lesson.levelCode} · {next.lesson.unitTitle}
+                {next.lesson.estimatedMinutes ? ` · about ${next.lesson.estimatedMinutes} min` : ""}
+              </p>
+              <p className="text-muted mt-2">{next.lesson.objective}</p>
+              {next.lesson.answered > 0 ? (
+                <div className="mt-4 max-w-sm">
+                  <ProgressBar
+                    value={next.lesson.answered}
+                    max={next.lesson.total}
+                    label={`${next.lesson.title}: exercises answered`}
+                  />
+                  <p className="text-muted mt-1 text-xs">
+                    {next.lesson.answered} of {next.lesson.total} exercises answered
+                  </p>
+                </div>
+              ) : null}
+              {next.belowLevel ? (
+                <p className="bg-warning-soft text-ink mt-4 rounded-md p-3 text-sm">
+                  Lessons at your level ({snapshot.level}) are planned but not written yet. Meanwhile, these lessons are
+                  a quick way to check the basics.
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-muted mt-3 text-sm">No unfinished lessons right now.</p>
+          )}
+          {inProgress.length > 0 ? (
+            <div className="mt-4">
+              <p className="text-ink text-sm font-medium">Topics you&apos;re working on</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {inProgress.slice(0, 8).map((c) => (
+                  <li key={c.slug}>
+                    <Badge tone={c.state === "practicing" ? "primary" : "neutral"}>
+                      {c.name} · {STATE_LABEL[c.state]}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+        {next.lesson ? (
+          <Link href={`/app/learn/${next.lesson.slug}`} className={buttonClasses({ size: "lg" })}>
+            {next.lesson.answered > 0 ? "Continue lesson" : "Start lesson"} <ArrowRight aria-hidden />
+          </Link>
+        ) : null}
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -138,56 +217,6 @@ export default async function TodayPage() {
             ) : (
               <p className="text-muted mt-3">No lessons are available yet.</p>
             )}
-          </section>
-
-          <section aria-labelledby="objectives-heading" className={card}>
-            <div className="flex items-center gap-2">
-              <Target aria-hidden className="text-primary size-5" />
-              <h2 id="objectives-heading" className={cardHeading}>
-                Current objectives
-              </h2>
-            </div>
-            {next.lesson ? (
-              <div className="mt-3">
-                <p className="text-muted text-sm">Next lesson · {next.lesson.unitTitle}</p>
-                <p className="text-ink mt-1 font-medium">{next.lesson.title}</p>
-                <p className="text-muted mt-1 text-sm">{next.lesson.objective}</p>
-                {next.lesson.answered > 0 ? (
-                  <div className="mt-3 max-w-sm">
-                    <ProgressBar
-                      value={next.lesson.answered}
-                      max={next.lesson.total}
-                      label={`${next.lesson.title}: exercises answered`}
-                    />
-                    <p className="text-muted mt-1 text-xs">
-                      {next.lesson.answered} of {next.lesson.total} exercises answered
-                    </p>
-                  </div>
-                ) : null}
-                {next.belowLevel ? (
-                  <p className="bg-warning-soft text-ink mt-3 rounded-md p-3 text-sm">
-                    Lessons at your level ({snapshot.level}) are planned but not written yet. Meanwhile, these lessons
-                    are a quick way to check the basics.
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-muted mt-3 text-sm">No unfinished lessons right now.</p>
-            )}
-            {inProgress.length > 0 ? (
-              <div className="mt-4">
-                <p className="text-ink text-sm font-medium">Topics you&apos;re working on</p>
-                <ul className="mt-2 flex flex-wrap gap-2">
-                  {inProgress.slice(0, 8).map((c) => (
-                    <li key={c.slug}>
-                      <Badge tone={c.state === "practicing" ? "primary" : "neutral"}>
-                        {c.name} · {STATE_LABEL[c.state]}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </section>
 
           <section aria-labelledby="skills-heading" className={card}>
@@ -261,13 +290,16 @@ export default async function TodayPage() {
             {mistakes.length > 0 ? (
               <ul className="mt-3 space-y-3">
                 {mistakes.map((m) => (
-                  <li key={m.id} className="border-border rounded-md border p-3 text-sm">
+                  <li key={m.id} className="bg-danger-soft rounded-lg p-3 text-sm">
                     <p className="text-muted">
                       {m.conceptName ?? "Exercise"} · {dateFmt.format(m.createdAt)}
                     </p>
-                    <p className="text-ink mt-1">
-                      You wrote <span className="font-medium">“{m.originalAnswer}”</span> — correct:{" "}
-                      <span className="font-medium">“{m.correctAnswer}”</span>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-2">
+                      <span className="sr-only">You wrote</span>
+                      <span className="text-danger line-through">{m.originalAnswer}</span>
+                      <ArrowRight aria-hidden className="text-muted size-4" />
+                      <span className="sr-only">correct:</span>
+                      <span className="text-success font-semibold">{m.correctAnswer}</span>
                     </p>
                   </li>
                 ))}
