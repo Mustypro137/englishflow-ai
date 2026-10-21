@@ -4,12 +4,10 @@ import { useEffect } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { reportError } from "@/lib/monitoring/report";
 
 export default function ErrorPage({ error, retry }: { error: unknown; retry: () => void }) {
-  useEffect(() => {
-    // Error monitoring (with personal data scrubbed) is added in Milestone 8.
-    console.error(error);
-  }, [error]);
+  useEffect(() => reportError(error), [error]);
 
   return (
     <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">

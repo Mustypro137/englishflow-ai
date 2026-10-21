@@ -36,6 +36,11 @@ export interface ReviewOverview {
   nextDue: { at: Date; label: string } | null;
 }
 
+/** Items due right now: the count on the Review link in the app navigation. */
+export async function countDueReviews(userId: string, now = new Date()): Promise<number> {
+  return prisma.reviewItem.count({ where: { userId, dueAt: { lte: now } } });
+}
+
 export async function getReviewOverview(userId: string, now = new Date()): Promise<ReviewOverview> {
   const tz = await learnerTimeZone(userId);
   const endToday = endOfLocalDay(now, tz);

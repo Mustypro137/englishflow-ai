@@ -240,14 +240,15 @@ interface AiProvider {
 
 ## 9. Security and privacy
 - Input validation with Zod on every server action and route handler.
-- Server-side authorization through `requireUser()` plus user-scoped repositories. Cross-user tests from M2 onward.
+- Server-side authorization through `requireUser()` plus user-scoped repositories. Cross-user tests from M2 onward; in M8 a static sweep (`tests/unit/authorization-sweep.test.ts`: every server action starts with `requireUser()`, every learner page and API route requires a session) and an integration sweep (`tests/integration/authorization.test.ts`: every id-based function refuses another learner's ids).
 - Rate limiting on auth (Better Auth) and AI routes (`AiUsage`).
-- Security headers via Next.js config: CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`.
+- Security headers via Next.js config (`src/lib/security-headers.ts`): CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` (microphone for this site only), `Cross-Origin-Opener-Policy`. The CSP has no nonces, because prerendered pages can't carry a per-request nonce, so inline scripts are allowed; everything else is `'self'` (plus Vercel Blob for audio and, when configured, the Sentry ingest host). Zod runs `jitless` in the browser so it never probes `eval`. A browser test fails on any CSP violation across all pages.
 - React's default escaping. No `dangerouslySetInnerHTML` except through a sanitizer for the markdown subset.
 - CSRF: Better Auth's protections and Next.js server-action origin checks.
 - Secrets only in environment variables. `.env.example` documents names only.
-- Data retention: learners can delete notes, flashcards, review items, tutor conversations, memories and their whole account (cascade). Export in M8.
-- Sentry configured to drop request bodies and learner text.
+- Data retention: learners can delete notes, flashcards, review items, tutor conversations, memories and their whole account (cascade). Settings → "Download my data" (`/api/export`, `src/server/db/export.ts`) returns every learner record as JSON, with curriculum referenced by slug and no password hashes, session tokens or internal user ids.
+- Sentry (optional, `NEXT_PUBLIC_SENTRY_DSN`), loaded from `src/instrumentation.ts` and `src/instrumentation-client.ts` only when configured. Errors only (no tracing, replay or default PII). `beforeSend`/`beforeBreadcrumb` run `src/lib/monitoring/scrub.ts`: no request bodies, cookies, headers, query strings, user or extras; only navigation and request breadcrumbs; emails, tokens and quoted text in messages redacted.
+- Dependency audit of runtime packages in CI (`npm audit --omit=dev --audit-level=high`).
 - AI-generated code or SQL is never executed.
 
 ## 10. Accessibility
@@ -255,14 +256,14 @@ interface AiProvider {
 - Exercise feedback announced through `aria-live` regions.
 - Text scale preference (CSS variable), reduced motion (`prefers-reduced-motion` plus a user setting), WCAG AA contrast tokens.
 - Transcripts/captions for audio. Text alternatives for all speaking tasks. Speaking is never required to progress in unrelated lessons.
-- Automated axe checks in Playwright plus manual keyboard walkthroughs per milestone.
+- Automated axe checks in Playwright on every page, plus an automated keyboard-only walkthrough of the core journey (`e2e/keyboard.spec.ts`) and one sweep of every signed-in page (`e2e/a11y.spec.ts`) that also checks the CSP, empty and error states and sideways scrolling; not-found pages in `e2e/states.spec.ts`.
 
 ## 11. Testing strategy
 | Layer | Tool | Covers |
 |---|---|---|
-| Unit | Vitest | SRS scheduler, mastery, recommendations, planner, grading, content schemas, AI output schemas |
-| Integration | Vitest + test Postgres | Repositories, authorization (user A can't read user B), seed script, AI service with mocked provider (timeout, error, invalid output, missing key) |
-| End-to-end | Playwright (mobile + desktop projects) | Sign-up/sign-in, onboarding, placement, lesson completion, persistence after reload, vocab save, reviews, dashboard real data, tutor setup message |
+| Unit | Vitest | SRS scheduler, mastery, recommendations, planner, grading, content schemas, AI output schemas, progress analytics, security headers, error-report scrubbing, authorization sweep |
+| Integration | Vitest + test Postgres | Repositories, authorization (user A can't read user B), data export, seed script, AI service with mocked provider (timeout, error, invalid output, missing key) |
+| End-to-end | Playwright (mobile + desktop projects) | Sign-up/sign-in, onboarding, placement, lesson completion, persistence after reload, vocab save, reviews, dashboard real data, tutor setup message, skill labs, progress, data download, security headers and CSP, empty/loading/not-found states |
 | Accessibility | @axe-core/playwright + keyboard tests | Core pages and exercise components |
 
 All test layers run in CI. Tests are never reported as passing unless they actually ran.

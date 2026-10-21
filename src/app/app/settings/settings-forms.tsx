@@ -7,6 +7,7 @@ import { useFormAction } from "@/components/forms/use-form-action";
 import { SubmitButton } from "@/components/forms/submit-button";
 import type { PreferencesView } from "@/server/db/learner-profile";
 import {
+  COLOR_THEMES,
   DAILY_MINUTE_OPTIONS,
   EXPLANATION_STYLES,
   GOALS,
@@ -93,6 +94,15 @@ export function PreferencesForm({ defaults }: { defaults: PreferencesView }) {
         options={TEXT_SCALES}
         defaultValue={defaults.textScale}
         error={errors.textScale}
+      />
+      <ChoiceGroup
+        legend="Theme"
+        description="Dark uses light text on a dark background."
+        name="colorTheme"
+        type="radio"
+        options={COLOR_THEMES}
+        defaultValue={defaults.colorTheme}
+        error={errors.colorTheme}
       />
       <fieldset className="space-y-3">
         <legend className="text-ink text-base font-semibold">Other options</legend>

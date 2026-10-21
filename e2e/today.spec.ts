@@ -8,11 +8,11 @@ test.beforeEach(async ({ page }) => {
 
 test("a new learner sees an honest empty dashboard with a reasoned first step", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Let's get started" })).toBeVisible();
-  const recs = page.getByRole("region", { name: "Recommended for you" });
-  await expect(recs).toContainText(/subject pronouns and be/);
-  await expect(recs).toContainText(/Next in your path|aren't written yet/);
-  await expect(page.getByRole("region", { name: "Achievements" })).toContainText("earned from real milestones");
+  await expect(page.getByRole("region", { name: "Today's plan" })).toContainText(/subject pronouns and be/);
+  await expect(page.getByRole("region", { name: "Continue learning" })).toContainText(/subject pronouns and be/);
   await expect(page.getByRole("list", { name: /last 7 days/ })).toContainText("0 activities");
+  await page.goto("/app/progress");
+  await expect(page.getByRole("region", { name: "Achievements" })).toContainText("earned from real milestones");
 });
 
 test("answers show up on the dashboard, and gamification can be switched off", async ({ page }) => {
@@ -25,9 +25,10 @@ test("answers show up on the dashboard, and gamification can be switched off", a
   await page.goto("/app");
   await expect(page.getByRole("heading", { name: "Let's get started" })).toHaveCount(0);
   await expect(page.getByRole("list", { name: /last 7 days/ })).toContainText("1 activity");
-  await expect(page.getByRole("region", { name: "Achievements" })).toContainText("First steps");
-  await expect(page.getByRole("region", { name: "Current objectives" })).toContainText("1 of");
+  await expect(page.getByRole("region", { name: "Continue learning" })).toContainText("1 of");
   await expect(page.getByText("Streak", { exact: true })).toBeVisible();
+  await page.goto("/app/progress");
+  await expect(page.getByRole("region", { name: "Achievements" })).toContainText("First steps");
 
   await page.goto("/app/settings");
   await page.getByRole("checkbox", { name: "Show streaks, points and badges" }).uncheck();
@@ -36,6 +37,7 @@ test("answers show up on the dashboard, and gamification can be switched off", a
   await page.goto("/app");
   await expect(page.getByRole("region", { name: "This week" })).toBeVisible();
   await expect(page.getByText("Streak", { exact: true })).toHaveCount(0);
+  await page.goto("/app/progress");
   await expect(page.getByRole("region", { name: "Achievements" })).toHaveCount(0);
 });
 

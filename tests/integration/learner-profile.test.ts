@@ -93,6 +93,7 @@ describe("learner profile repository", () => {
       translationSupport: false,
       textScale: "x_large",
       reducedMotion: true,
+      colorTheme: "dark",
       gamificationEnabled: false,
       tutorHintMode: "direct",
       aiContextSharing: true,
@@ -104,6 +105,7 @@ describe("learner profile repository", () => {
       translationSupport: false,
       textScale: "x_large",
       reducedMotion: true,
+      colorTheme: "dark",
       gamificationEnabled: false,
       tutorHintMode: "direct",
       aiContextSharing: true,
@@ -125,6 +127,7 @@ describe("learner data isolation", () => {
       translationSupport: false,
       textScale: "large",
       reducedMotion: true,
+      colorTheme: "dark",
       gamificationEnabled: true,
       tutorHintMode: "guided",
       aiContextSharing: true,
@@ -132,7 +135,12 @@ describe("learner data isolation", () => {
 
     expect((await getProfile(a.id))?.displayName).toBe("A changed");
     expect(await getProfile(b.id)).toMatchObject({ displayName: "Learner B", timezone: "America/New_York" });
-    expect(await getPreferences(b.id)).toMatchObject({ dailyMinutes: 20, textScale: "normal", reducedMotion: false });
+    expect(await getPreferences(b.id)).toMatchObject({
+      dailyMinutes: 20,
+      textScale: "normal",
+      reducedMotion: false,
+      colorTheme: "system",
+    });
   });
 
   it("deletes all of a learner's records when their account is deleted, and only theirs", async () => {

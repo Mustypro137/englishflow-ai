@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { withoutDeviceSpeech } from "./audio-fixture";
-import { completeOnboarding, signUp } from "./helpers";
+import { collectCspViolations, completeOnboarding, signUp } from "./helpers";
 import { APP_ROUTES, PUBLIC_ROUTES } from "./routes";
 
 async function seriousViolations(page: Page) {
@@ -18,17 +18,32 @@ for (const route of PUBLIC_ROUTES) {
   });
 }
 
-test("no serious accessibility violations in the signed-in app", async ({ page }) => {
+/*
+ * One sweep of every signed-in page, for a brand-new learner (each page is visited once, to keep
+ * the load on the test server down): no serious accessibility violations, nothing blocked by the
+ * Content-Security-Policy, an explained empty state rather than an error or broken numbers, and
+ * no sideways scrolling (on the phone project, at phone width).
+ */
+test("every signed-in page: accessible, allowed by the CSP, no errors or broken values, no sideways scroll", async ({
+  page,
+}) => {
   // Visits every signed-in page in one session; allow about 15 seconds per page.
   test.setTimeout(20_000 + APP_ROUTES.length * 15_000);
+  const cspViolations = await collectCspViolations(page);
   await signUp(page);
   expect(await seriousViolations(page), "/app/onboarding").toEqual([]);
   await completeOnboarding(page);
   for (const route of APP_ROUTES) {
     await page.goto(route);
-    await expect(page.locator("main h1")).toBeVisible();
+    const main = page.locator("main");
+    await expect(main.locator("h1"), route).toBeVisible();
     expect(await seriousViolations(page), route).toEqual([]);
+    await expect(page.getByText("Something went wrong"), route).toHaveCount(0);
+    await expect(main, route).not.toContainText(/\bNaN\b|\bundefined\b|\[object Object\]|Infinity/);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `${route} scrolls sideways`).toBeLessThanOrEqual(0);
   }
+  expect(cspViolations).toEqual([]);
 });
 
 test("no serious accessibility violations on lesson feedback and placement results", async ({ page }) => {
@@ -63,4 +78,27 @@ test("no serious accessibility violations after answering the sample exercise", 
   await page.getByRole("button", { name: "Check" }).click();
   await expect(page.getByText("Not quite.")).toBeVisible();
   expect(await seriousViolations(page)).toEqual([]);
+});
+
+// Dark theme (from the device setting): same contrast and accessibility checks on every page.
+test.describe("dark theme", () => {
+  test.use({ colorScheme: "dark" });
+
+  test("public pages have no serious accessibility violations", async ({ page }) => {
+    for (const route of PUBLIC_ROUTES) {
+      await page.goto(route);
+      expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
+
+  test("signed-in pages have no serious accessibility violations", async ({ page }) => {
+    test.setTimeout(20_000 + APP_ROUTES.length * 15_000);
+    await signUp(page);
+    await completeOnboarding(page);
+    for (const route of APP_ROUTES) {
+      await page.goto(route);
+      await expect(page.locator("main h1"), route).toBeVisible();
+      expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
 });

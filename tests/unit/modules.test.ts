@@ -90,6 +90,7 @@ describe("getNavModules", () => {
       "tutor",
       "notebook",
       "mistakes",
+      "progress",
       "calendar",
       "settings",
     ]);

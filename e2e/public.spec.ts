@@ -64,6 +64,7 @@ test.describe("sample exercise", () => {
 
     await page.getByRole("button", { name: "Show answer" }).click();
     await expect(page.getByText("Answer: goes.")).toBeVisible();
+    await expect(page.getByText("goes", { exact: true })).toBeVisible();
 
     await input.fill("Goes.");
     await check.click();

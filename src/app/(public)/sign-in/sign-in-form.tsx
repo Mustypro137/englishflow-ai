@@ -47,7 +47,7 @@ export function SignInForm() {
   return (
     <form method="post" onSubmit={onSubmit} noValidate className="space-y-4">
       <FormMessage>{formError}</FormMessage>
-      <TextField label="Email" name="email" type="email" autoComplete="email" required error={errors.email} />
+      <TextField label="Email" name="email" type="email" autoComplete="off" required error={errors.email} />
       <PasswordField name="password" autoComplete="current-password" required error={errors.password} />
       <div className="text-right text-sm">
         <Link href="/forgot-password" className="text-primary rounded-sm underline underline-offset-4">

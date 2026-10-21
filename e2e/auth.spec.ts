@@ -1,5 +1,9 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, newLearner, newSession, signIn, signOut, signUp } from "./helpers";
+
+/** The Today page greets by local time of day. */
+const greeting = (name: string) => new RegExp(`^Good (morning|afternoon|evening), ${name}$`);
 
 test("sign up, onboard, sign out, sign in — and saved choices persist", async ({ page }) => {
   const learner = await signUp(page);
@@ -7,8 +11,10 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
   await expect(page.getByRole("heading", { level: 1, name: "Set up your learning" })).toBeVisible();
   await completeOnboarding(page, { minutes: "30", level: /A2 — Elementary/ });
 
-  await expect(page.getByRole("heading", { level: 1, name: `Welcome, ${learner.name}` })).toBeVisible();
-  await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Today's plan" }).getByText("Built around your 30-minute goal"),
+  ).toBeVisible();
   await expect(page.getByText(/Working level: A2/)).toBeVisible();
   await expect(page.getByText("your own estimate", { exact: true })).toBeVisible();
 
@@ -17,8 +23,10 @@ test("sign up, onboard, sign out, sign in — and saved choices persist", async 
   await expect(page).toHaveURL(/\/app$/);
 
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: `Welcome, ${learner.name}` })).toBeVisible();
-  await expect(page.getByRole("definition").filter({ hasText: "30 minutes" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: greeting(learner.name) })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Today's plan" }).getByText("Built around your 30-minute goal"),
+  ).toBeVisible();
 });
 
 test("signed-out visitors are sent to sign in, then back to where they were going", async ({ page }) => {
@@ -80,18 +88,20 @@ test("onboarding keeps answers and explains the problem when something is missin
   await expect(page).toHaveURL(/\/app\/onboarding$/);
 });
 
-test("settings save, persist after reload, and apply the text size", async ({ page }) => {
+test("settings save, persist after reload, and apply the text size and theme", async ({ page }) => {
   await signUp(page);
   await completeOnboarding(page);
   await page.goto("/app/settings");
 
   await page.getByRole("radio", { name: "Extra large" }).check();
+  await page.getByRole("radio", { name: "Dark", exact: true }).check();
   await page.getByRole("checkbox", { name: /Reduce motion/ }).check();
   await page.getByRole("radio", { name: "60 minutes" }).check();
   await page.getByRole("button", { name: "Save preferences" }).click();
   await expect(page.getByText("Preferences saved.")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-text-scale", "x-large");
   await expect(page.locator("html")).toHaveAttribute("data-reduced-motion", "true");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   await page.getByLabel("Name").fill("Renamed Learner");
   await page.getByRole("button", { name: "Save profile" }).click();
@@ -100,8 +110,27 @@ test("settings save, persist after reload, and apply the text size", async ({ pa
   await page.reload();
   await expect(page.getByRole("radio", { name: "Extra large" })).toBeChecked();
   await expect(page.getByRole("radio", { name: "60 minutes" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Dark", exact: true })).toBeChecked();
   await expect(page.getByLabel("Name")).toHaveValue("Renamed Learner");
   await expect(page.locator("html")).toHaveAttribute("data-text-scale", "x-large");
+});
+
+test("a learner can download their data as JSON", async ({ page, request }) => {
+  const learner = await signUp(page);
+  await completeOnboarding(page);
+  await page.goto("/app/settings");
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download my data" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^englishflow-export-\d{4}-\d{2}-\d{2}\.json$/);
+  const data = JSON.parse(await readFile(await download.path(), "utf8"));
+  expect(data.account.email).toBe(learner.email);
+  expect(data.profile.onboardingCompletedAt).toBeTruthy();
+
+  // Signed out, there is nothing to download.
+  expect((await request.get("/api/export")).status()).toBe(401);
 });
 
 test("a learner can delete their account, and it is really gone", async ({ page }) => {
@@ -140,8 +169,10 @@ test("each learner sees only their own details", async ({ browser }, testInfo) =
   await completeOnboarding(b, { minutes: "60" });
 
   await a.reload();
-  await expect(a.getByRole("heading", { level: 1, name: "Welcome, Learner Alpha" })).toBeVisible();
-  await expect(a.getByRole("definition").filter({ hasText: "10 minutes" })).toBeVisible();
+  await expect(a.getByRole("heading", { level: 1, name: greeting("Learner Alpha") })).toBeVisible();
+  await expect(
+    a.getByRole("region", { name: "Today's plan" }).getByText("Built around your 10-minute goal"),
+  ).toBeVisible();
   await expect(a.getByText("Learner Beta")).toHaveCount(0);
 
   await b.goto("/app/settings");

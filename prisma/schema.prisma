@@ -143,6 +143,12 @@ enum TextScale {
   x_large
 }
 
+enum ColorTheme {
+  system
+  light
+  dark
+}
+
 model Profile {
   id                    String       @id @default(cuid())
   userId                String       @unique
@@ -174,6 +180,7 @@ model LearningPreferences {
   translationSupport  Boolean          @default(true)
   textScale           TextScale        @default(normal)
   reducedMotion       Boolean          @default(false)
+  colorTheme          ColorTheme       @default(system)
   gamificationEnabled Boolean          @default(true)
   /// Whether the AI tutor may see learning history (Milestone 6). Off until the learner opts in.
   aiContextSharing    Boolean          @default(false)

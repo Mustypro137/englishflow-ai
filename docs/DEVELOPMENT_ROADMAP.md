@@ -1,6 +1,6 @@
 # EnglishFlow AI — Development Roadmap
 
-_Last updated 2026-10-17. Milestones 1–7 complete; Milestone 8 not started. Deployed at https://englishflow-ai.vercel.app._
+_Last updated 2026-10-20. Milestones 1–7 complete; Milestone 8 implemented, in review ([PR #1](https://github.com/Mustypro137/englishflow-ai/pull/1)). Deployed at https://englishflow-ai.vercel.app._
 
 The milestones follow master prompt §21. Each one is a **coherent, usable increment**: implement → run tests → inspect the running app → fix → document limitations, then move on. "Smaller and working" beats "broad and incomplete".
 
@@ -230,6 +230,22 @@ Status key: ⬜ not started · 🟨 in progress · ✅ done (verified by passing
 **Tests:** complete §20 acceptance suite (all 15) in CI, including #13 (mobile/desktop), #14 (keyboard), #15 (empty/loading/error states).
 
 **Completion criteria:** every item in the production-ready checklist is checked.
+
+**Status: 🟡 implemented, in review (2026-10-20).** Delivered: progress analytics, JSON data export, Sentry with scrubbing (off until a DSN is set), security headers and CSP, an authorization sweep across learner routes, keyboard, states and security browser tests; plus a **dark theme** (Theme setting: same as my device, light or dark; dark tokens checked for WCAG AA contrast; one additive migration, `colorTheme`), a **redesigned homepage**, and contractions accepted before sentence punctuation. Verified so far: lint, typecheck, Prettier check, 274 unit tests, 74 integration tests, a production build, and the browser tests for the new work (theme setting, dark-theme axe on every public page and every signed-in page on desktop, homepage exercise and axe, desktop and phone). The dark-theme sweep of signed-in pages on the phone timed out locally (slow database from Nigeria; no violations before the timeout) and the full Playwright suite hasn't been rerun; both are left to CI on the PR. **Still open before this milestone is complete:** CI green and merge, the `colorTheme` migration on production, a manual screen-reader pass (NVDA or VoiceOver), and the external setup items in the README (Sentry DSN, Resend email).
+
+**Acceptance checks → automated tests** (numbering as used by the milestones above; all run in CI):
+
+| # | Area | Covered by |
+|---|---|---|
+| 1 | Sign-up, sign-in, sign-out, persistence | `e2e/auth.spec.ts`, `tests/integration/learner-profile.test.ts` |
+| 2–5 | Lessons, exercises, feedback, progress, placement | `e2e/learn.spec.ts`, `tests/integration/learning.test.ts`, `tests/unit/grade-exercise.test.ts`, `mastery-placement.test.ts`, `content.test.ts` |
+| 6–8 | Reviews, vocabulary, notebook, mistakes | `e2e/review.spec.ts`, `tests/integration/reviews.test.ts`, `tests/unit/srs.test.ts` |
+| 9 | Dashboard from real data | `e2e/today.spec.ts`, `e2e/progress.spec.ts`, `tests/integration/activity.test.ts`, `tests/unit/analytics.test.ts` |
+| 10–11 | AI tutor setup state, AI reliability and limits | `e2e/tutor.spec.ts`, `tests/integration/ai.test.ts`, `tests/unit/ai.test.ts` |
+| 12 | One learner can't see or change another's data | `tests/integration/authorization.test.ts`, `tests/unit/authorization-sweep.test.ts`, `tests/integration/export.test.ts`, `e2e/auth.spec.ts` ("each learner sees only their own details") |
+| 13 | Mobile and desktop | every browser test runs on desktop (1280px) and phone (Pixel 7); the every-page sweep in `e2e/a11y.spec.ts` checks no page scrolls sideways |
+| 14 | Keyboard | `e2e/keyboard.spec.ts`, keyboard tests in `navigation`, `learn`, `public` and `review` specs |
+| 15 | Empty, loading and error states | every-page sweep in `e2e/a11y.spec.ts`, `e2e/states.spec.ts` (not found), empty-state tests in `today`, `progress` and `tutor` specs |
 
 ---
 

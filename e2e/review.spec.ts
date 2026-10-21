@@ -117,10 +117,9 @@ test("the Today page shows reviews that are due", async ({ page }) => {
   await page.getByRole("button", { name: "Save “key” to my words" }).click();
   await expect(page.getByRole("button", { name: "Remove “key” from my words" })).toBeVisible();
   await page.goto("/app");
-  const reviews = page.getByRole("region", { name: "Reviews" });
-  await expect(reviews.getByText("1", { exact: true })).toBeVisible();
-  await expect(reviews.getByText("due now")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Recommended for you" })).toContainText("Review 1 item");
-  await reviews.getByRole("link", { name: "Start reviewing" }).click();
+  await expect(page.getByRole("link", { name: "Review 1 due" }).first()).toBeVisible();
+  const plan = page.getByRole("region", { name: "Today's plan" });
+  await expect(plan).toContainText("Answer the 1 due item");
+  await plan.getByRole("link", { name: /^Review/ }).click();
   await expect(page).toHaveURL(/\/app\/review$/);
 });

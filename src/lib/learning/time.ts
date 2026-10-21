@@ -79,3 +79,11 @@ export function startOfLocalDate(dateKey: string, timeZone: string): Date {
   const [y, m, d] = dateKey.split("-").map(Number);
   return localMidnight(y, m, d, timeZone);
 }
+
+/** Greeting for the learner's local time of day. */
+export function greetingFor(instant: Date, timeZone: string): "Good morning" | "Good afternoon" | "Good evening" {
+  const { hour } = partsInZone(instant, timeZone);
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}

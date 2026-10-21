@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AccountMenu } from "@/components/layout/account-menu";
 import { AppShell } from "@/components/layout/app-shell";
+import { ReviewDueBadge } from "@/components/layout/review-due-badge";
 
 export const metadata: Metadata = {
   title: { default: "Learning app", template: "%s · EnglishFlow AI" },
@@ -14,6 +15,11 @@ export default function LearnerAppLayout({ children }: LayoutProps<"/app">) {
       account={
         <Suspense fallback={null}>
           <AccountMenu />
+        </Suspense>
+      }
+      reviewBadge={
+        <Suspense fallback={null}>
+          <ReviewDueBadge />
         </Suspense>
       }
     >
